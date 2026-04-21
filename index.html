@@ -365,7 +365,7 @@ function initMsal(){
     return;
   }
   try{
-    msalApp = new msal.PublicClientApplication({
+    const msalConfig = {
       auth:{
         clientId: CRM_CONFIG.clientId,
         authority: 'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',
@@ -373,9 +373,15 @@ function initMsal(){
         navigateToLoginRequestUrl: false
       },
       cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true }
-    });
-    msalApp.initialize().then(()=>{
-      msalApp.handleRedirectPromise().then(resp=>{
+    };
+    // Support both MSAL v2 and v5
+    const createApp = msal.createPublicClientApplication || ((cfg) => Promise.resolve(new msal.PublicClientApplication(cfg)));
+    Promise.resolve(createApp(msalConfig)).then(app => {
+      msalApp = app;
+      const initPromise = msalApp.initialize ? msalApp.initialize() : Promise.resolve();
+      initPromise.then(()=>{
+      const redirectPromise = msalApp.handleRedirectPromise ? msalApp.handleRedirectPromise() : Promise.resolve(null);
+      redirectPromise.then(resp=>{
         if(resp && resp.accessToken){ accessToken=resp.accessToken; onConnected(); return; }
         const accounts=msalApp.getAllAccounts();
         if(accounts.length>0){
