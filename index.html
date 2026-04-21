@@ -93,23 +93,39 @@ body{font-family:Segoe UI,system-ui,sans-serif;background:#f0f2f5;min-height:100
 
 /* Table */
 .tbl-wrap-outer{position:relative}
-.tbl-wrap{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;
-  scrollbar-width:auto;scrollbar-color:#0078d4 #dde8f5}
-.tbl-wrap::-webkit-scrollbar{height:16px}
-.tbl-wrap::-webkit-scrollbar-track{background:#dde8f5;border-radius:0}
-.tbl-wrap::-webkit-scrollbar-thumb{background:#0078d4;border-radius:0;border:4px solid #dde8f5}
-.tbl-wrap::-webkit-scrollbar-thumb:hover{background:#004f9e}
-table{border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:2200px;width:100%}
+.tbl-wrap{
+  overflow-x:scroll !important;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thick !important;
+  scrollbar-color:#0078d4 #cce0f5 !important;
+}
+.tbl-wrap::-webkit-scrollbar{
+  height:16px !important;
+  display:block !important;
+  background:#cce0f5;
+}
+.tbl-wrap::-webkit-scrollbar-track{
+  background:#cce0f5;
+  border-radius:0;
+}
+.tbl-wrap::-webkit-scrollbar-thumb{
+  background:#0078d4 !important;
+  border-radius:8px;
+  border:3px solid #cce0f5;
+  min-width:60px;
+}
+.tbl-wrap::-webkit-scrollbar-thumb:hover{background:#004f9e !important}
+table{border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:2200px;width:2200px}
 th{text-align:left;font-size:10px;font-weight:700;color:#666;padding:6px 8px;
   border-bottom:2px solid #0078d4;background:#f0f6ff;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;text-transform:uppercase;letter-spacing:.03em;
   position:sticky;top:0;z-index:1}
 th.g{background:#f0faf0;color:#107c10}
-td{padding:5px 8px;border-bottom:1px solid #f5f5f5;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+td{padding:5px 8px;border-bottom:1px solid #f5f5f5;vertical-align:middle;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 tr:hover td{background:#f5f9ff}
-/* Freeze first 2 columns */
 th:nth-child(1),td:nth-child(1){position:sticky;left:0;z-index:2;background:#f0f6ff;border-right:1px solid #ddd;width:40px}
-th:nth-child(2),td:nth-child(2){position:sticky;left:40px;z-index:2;background:#f0f6ff;border-right:1px solid #ddd}
+th:nth-child(2),td:nth-child(2){position:sticky;left:40px;z-index:2;background:#f0f6ff;border-right:2px solid #0078d4}
 td:nth-child(1){background:#fff}
 td:nth-child(2){background:#fff}
 tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#f5f9ff}
