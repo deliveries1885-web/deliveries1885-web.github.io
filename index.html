@@ -325,13 +325,6 @@ const CODE_MAP = {
 const CODES = Object.keys(CODE_MAP);
 
 // ── Code / Subcode Map ────────────────────────────────────────
-const CODE_MAP = {
-  'Present':  ['On Duty'],
-  'Absent':   ['Absconding','Accident','Bike Issue','Cancelled','COD Issue','Cycle Issue','Defaulter','Family Issue','Financial Issue','Fuel Issue','Left','Health Issue','ID Blocked','Late Login','Moved to Another Project','Not Responding','Resigned','Salary Advance Issue','Shift Issue','Terminated','Weather Issue','Zone Issue','Others'],
-  'Vacation': ['Vacation'],
-  'Week Off': ['Weekoff']
-};
-const CODES = Object.keys(CODE_MAP);
 
 function codeDD(id, val){
   return '<select class="mini-input" id="c_'+id+'" onchange="onCodeChange(''+id+'')" style="width:110px;cursor:pointer">'
@@ -608,66 +601,6 @@ function loadCSV(e){
 }
 
 // ── Dropdowns ─────────────────────────────────────────────────
-function codeDD(id, val){
-  return `<select class="dd code-dd" id="c_${id}" onchange="onCodeChange('${id}')">
-    <option value="">— Code —</option>
-    ${CODES.map(c=>`<option value="${c}"${c===val?' selected':''}>${c}</option>`).join('')}
-  </select>`;
-}
-function subDD(id, code, val){
-  const subs = code && CODE_MAP[code] ? CODE_MAP[code] : [];
-  return `<select class="dd sub-dd" id="s_${id}" ${subs.length===0?'disabled':''}>
-    <option value="">— Subcode —</option>
-    ${subs.map(s=>`<option value="${s}"${s===val?' selected':''}>${s}</option>`).join('')}
-  </select>`;
-}
-function onCodeChange(id){
-  const code=document.getElementById('c_'+id).value;
-  const subs=code&&CODE_MAP[code]?CODE_MAP[code]:[];
-  const el=document.getElementById('s_'+id);
-  el.innerHTML=`<option value="">— Subcode —</option>${subs.map(s=>`<option value="${s}">${s}</option>`).join('')}`;
-  el.disabled=subs.length===0;
-  if(subs.length===1) el.value=subs[0];
-}
-
-// ── Save / Delete ─────────────────────────────────────────────
-async function saveRow(id){
-  const r=riders.find(x=>x._id===id); if(!r) return;
-  const code=(document.getElementById('c_'+id)||{}).value||'';
-  const sub=(document.getElementById('s_'+id)||{}).value||'';
-  if(!code){ toast('Please select a Code.'); return; }
-  if(CODE_MAP[code]&&CODE_MAP[code].length>0&&!sub){ toast('Please select a Subcode.'); return; }
-  r.code=code; r.subcode=sub;
-  r.remarks=(document.getElementById('rem_'+id)||{}).value||'';
-  r.updatedBy=currentUser;
-  r.updatedAt=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  r.status='done';
-  if(currentRole==='poc'){
-    localSave();
-    setSyncStatus('spin','Saving...');
-    try{ await saveToGitHub(); setSyncStatus('ok','Saved!'); setLastSync(); }
-    catch(e){ setSyncStatus('err','Save failed'); console.error(e); }
-    renderPoc();
-  } else {
-    await saveToOneDrive();
-    renderAdmin();
-  }
-  toast('Saved!');
-}
-
-async function delRow(id){
-  if(!confirm('Remove this rider?')) return;
-  riders=riders.filter(x=>x._id!==id);
-  await saveToOneDrive(); renderAdmin();
-}
-
-async function clearAll(){
-  if(!confirm('Delete ALL rider data? This cannot be undone.')) return;
-  riders=[];
-  await saveToOneDrive(); renderAdmin();
-}
-
-// ── Stats ─────────────────────────────────────────────────────
 function renderStats(el, list){
   const total=list.length, done=list.filter(r=>r.status==='done').length, pend=total-done, pct=total?Math.round(done/total*100):0;
   document.getElementById(el).innerHTML=`
