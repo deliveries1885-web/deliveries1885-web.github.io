@@ -12,7 +12,7 @@
 <script>
 const CRM_CONFIG = {
   clientId:      "8a033239-ba9e-4731-908b-2d25da6975ad",
-  adminPin:      "Mehar",
+  adminPin:      "1234",
   fileName:      "RiderAbsenceCRM_Data.json",
   publicDataUrl: "https://eightyfivedeliverys-my.sharepoint.com/:u:/g/personal/info_1885_ae/IQCSLPElEBOoRr7_b9S6MiZwAZ32pmZk9mDAI02atRpl2uY?download=1"
 };
@@ -219,7 +219,7 @@ tr:hover td{background:#fafbff}
       <span class="pill" id="topPill"></span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div class="sync-row" id="syncRow" onclick="connectOneDrive()">
+      <div class="sync-row" id="syncRow" onclick="connectOneDrive()" title="Click to connect OneDrive with your 1885 account">
         <div class="sync-dot" id="syncDot"></div>
         <span id="syncText">Not connected</span>
       </div>
@@ -376,7 +376,7 @@ const CODES = Object.keys(CODE_MAP);
 // ── State ─────────────────────────────────────────────────────
 let riders = JSON.parse(localStorage.getItem('crm_final') || '[]');
 let currentUser = null, currentRole = null;
-let msalApp = null, accessToken = null, driveItemId = null;
+let msalApp = null, accessToken = null, driveItemId = null, adminDriveId = null;
 
 function localSave(){ try{ localStorage.setItem('crm_final', JSON.stringify(riders)); }catch(e){} }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -416,7 +416,7 @@ function initMsal(){
           .then(r=>{accessToken=r.accessToken;onConnected();})
           .catch(()=>setSyncStatus('','Click to connect OneDrive'));
       } else {
-        setSyncStatus('','Click to connect OneDrive');
+        setSyncStatus('','Click here to connect — use your 1885 account');
       }
     }).catch(()=>setSyncStatus('','Click to connect OneDrive'));
   } catch(e){
@@ -478,18 +478,35 @@ async function apiCall(method, path, body, isBlob){
 
 async function getOrCreateFile(){
   if(driveItemId) return driveItemId;
+  // Check if admin stored the item ID
+  const storedId = localStorage.getItem('crm_admin_item_id');
+  const storedDrive = localStorage.getItem('crm_admin_drive_id');
+  if(storedId && storedDrive && currentRole !== 'admin'){
+    driveItemId = storedId;
+    adminDriveId = storedDrive;
+    return driveItemId;
+  }
   try{
     const r = await apiCall('GET', `/me/drive/root:/${CRM_CONFIG.fileName}`);
-    driveItemId = r.id; return driveItemId;
+    driveItemId = r.id;
+    if(currentRole === 'admin'){
+      // Store for POCs to use
+      localStorage.setItem('crm_admin_item_id', r.id);
+      localStorage.setItem('crm_admin_drive_id', r.parentReference ? r.parentReference.driveId : '');
+    }
+    return driveItemId;
   } catch(e){
-    // Create empty file
     const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${CRM_CONFIG.fileName}:/content`,{
       method:'PUT',
       headers:{ 'Authorization':'Bearer '+accessToken, 'Content-Type':'application/json' },
       body: '[]'
     });
     const data = await r.json();
-    driveItemId = data.id; return driveItemId;
+    driveItemId = data.id;
+    if(currentRole === 'admin'){
+      localStorage.setItem('crm_admin_item_id', data.id);
+    }
+    return driveItemId;
   }
 }
 
@@ -546,52 +563,14 @@ function doLogin(){
   riders = JSON.parse(localStorage.getItem('crm_final')||'[]');
   if(role==='admin'){
     renderAdmin();
-    initMsal(); // Only admin connects to OneDrive
+    initMsal();
   } else {
-    // POC - load from localStorage, no Microsoft login needed
-    setSyncStatus('ok','Connected');
+    // POC - connect with their own 1885 account
     renderPoc();
-    // Try silent OneDrive load in background
-    silentLoad();
+    initMsal(); // Same OneDrive connection for POCs too
   }
 }
 
-async function silentLoad(){
-  // Load data from public OneDrive link - no login needed
-  setSyncStatus('spin','Loading data...');
-  try{
-    const resp = await fetch(CRM_CONFIG.publicDataUrl);
-    if(resp.ok){
-      const text = await resp.text();
-      if(text && text.trim().startsWith('[')){
-        riders = JSON.parse(text);
-        localSave();
-        setSyncStatus('ok','Data loaded');
-        renderPoc();
-      } else {
-        setSyncStatus('','Using local data');
-      }
-    } else {
-      setSyncStatus('','Using local data');
-    }
-  } catch(e){
-    setSyncStatus('','Using local data');
-    console.log('Public load failed, using local:', e.message);
-  }
-}
-
-function logout(){
-  currentUser=null; currentRole=null; accessToken=null; driveItemId=null;
-  document.getElementById('mainApp').style.display='none';
-  document.getElementById('loginOuter').style.display='flex';
-  document.getElementById('adminView').style.display='none';
-  document.getElementById('pocView').style.display='none';
-  document.getElementById('exportBtn').style.display='none';
-  document.getElementById('loginName').value='';
-  document.getElementById('adminPin').value='';
-  document.getElementById('loginRole').value='poc';
-  document.getElementById('pinRow').style.display='none';
-}
 
 // ── CSV Upload ────────────────────────────────────────────────
 function fc(h,kws){ for(const kw of kws){ const i=h.findIndex(x=>x.toLowerCase().replace(/[\s_\-\.]/g,'').includes(kw.toLowerCase().replace(/[\s_\-\.]/g,''))); if(i>=0)return i; } return -1; }
