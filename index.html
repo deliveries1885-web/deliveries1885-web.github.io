@@ -92,29 +92,25 @@ body{font-family:Segoe UI,system-ui,sans-serif;background:#f0f2f5;min-height:100
 .poc-notice{padding:7px 16px;background:#f0faf0;border-bottom:1px solid #c8e8c8;font-size:12px;color:#1a5c1a;font-weight:600}
 
 /* Table */
-.tbl-wrap-outer{position:relative;border-bottom:3px solid #0078d4}
-.tbl-wrap{
-  overflow-x:scroll;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:thick;
-  scrollbar-color:#0078d4 #dde8f5;
-}
-.tbl-wrap::-webkit-scrollbar{height:18px;display:block;background:#dde8f5}
-.tbl-wrap::-webkit-scrollbar-track{background:#dde8f5}
-.tbl-wrap::-webkit-scrollbar-thumb{background:#0078d4;border-radius:9px;border:4px solid #dde8f5;min-width:80px}
+.tbl-wrap-outer{position:relative}
+.tbl-wrap{overflow-x:scroll;-webkit-overflow-scrolling:touch;scrollbar-width:thick;scrollbar-color:#0078d4 #cce0f5}
+.tbl-wrap::-webkit-scrollbar{height:20px;display:block}
+.tbl-wrap::-webkit-scrollbar-track{background:#cce0f5}
+.tbl-wrap::-webkit-scrollbar-thumb{background:#0078d4;border-radius:10px;border:4px solid #cce0f5;min-width:80px}
 .tbl-wrap::-webkit-scrollbar-thumb:hover{background:#004f9e}
-table{border-collapse:collapse;font-size:12px;table-layout:fixed;width:2400px}
-th{text-align:left;font-size:10px;font-weight:700;color:#555;padding:7px 8px;
+table{border-collapse:collapse;font-size:12px;table-layout:fixed;width:1400px}
+th{text-align:left;font-size:11px;font-weight:700;color:#555;padding:8px 10px;
   border-bottom:2px solid #0078d4;background:#f0f6ff;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;
   position:sticky;top:0;z-index:1}
-th.g{background:#f0faf0;color:#107c10}
-td{padding:6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1a1a1a}
+th.g{background:#e8f8ee;color:#107c10}
+td{padding:7px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1a1a1a;font-size:13px}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#f5f9ff}
-th:nth-child(1),td:nth-child(1){position:sticky;left:0;z-index:2;background:#f0f6ff;border-right:1px solid #ddd;width:36px;min-width:36px}
-th:nth-child(2),td:nth-child(2){position:sticky;left:36px;z-index:2;background:#f0f6ff;border-right:2px solid #0078d4;width:90px;min-width:90px}
+/* Freeze # and Rider name columns */
+th:nth-child(1),td:nth-child(1){position:sticky;left:0;z-index:2;background:#f0f6ff;border-right:1px solid #ddd;width:40px;min-width:40px}
+th:nth-child(2),td:nth-child(2){position:sticky;left:40px;z-index:2;background:#f0f6ff;border-right:2px solid #0078d4;width:170px;min-width:170px}
 td:nth-child(1),td:nth-child(2){background:#fff}
 tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#eef5ff}
 table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
@@ -284,102 +280,38 @@ tr:hover td{background:#fafbff}
       <div class="tbl-wrap" id="tblWrap1">
         <table>
           <colgroup>
-            <col style="width:36px">  <!-- # -->
-            <col style="width:90px">  <!-- date -->
-            <col style="width:80px">  <!-- project -->
-            <col style="width:130px"> <!-- type2 -->
-            <col style="width:90px">  <!-- poc -->
-            <col style="width:180px"> <!-- rider name -->
-            <col style="width:90px">  <!-- passport -->
-            <col style="width:80px">  <!-- hrms -->
-            <col style="width:105px"> <!-- mobile -->
-            <col style="width:70px">  <!-- license -->
-            <col style="width:65px">  <!-- lms -->
-            <col style="width:80px">  <!-- special -->
-            <col style="width:100px"> <!-- shift -->
-            <col style="width:65px">  <!-- planned -->
-            <col style="width:65px">  <!-- achieved -->
-            <col style="width:65px">  <!-- shifts -->
-            <col style="width:65px">  <!-- no show -->
-            <col style="width:65px">  <!-- orders -->
-            <col style="width:65px">  <!-- client -->
-            <col style="width:115px"> <!-- code -->
-            <col style="width:175px"> <!-- subcode -->
-            <col style="width:170px"> <!-- remarks -->
-            <col style="width:95px">  <!-- updated by -->
-            <col style="width:70px">  <!-- status -->
-            <col style="width:55px">  <!-- save -->
-            <col style="width:42px">  <!-- del -->
-          </colgroup>
-          <thead><tr>
-            <th>#</th><th>Date</th><th>Project</th><th>Type 2</th><th>POC</th>
-            <th>Rider name</th><th>Passport</th><th>HRMS ID</th><th>Mobile</th>
-            <th>License</th><th>LMS</th><th>Special day</th><th>Shift timing</th>
-            <th>Planned</th><th>Achieved</th><th>Shifts</th><th>No show</th>
-            <th>Orders</th><th>Client</th>
-            <th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th>
-            <th>Updated by</th><th>Status</th><th>Save</th><th>Del</th>
-          </tr></thead>
-          <tbody id="adminTable"></tbody>
-        </table>
-        <div id="adminEmpty" class="empty-state">No riders loaded. Upload your CSV above.</div>
-      </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- POC VIEW -->
-  <div id="pocView" style="display:none">
-    <div class="stats" id="pocStats"></div>
-    <div class="card">
-      <div class="card-head"><span class="card-title">Your assigned riders — select code, subcode &amp; add remarks</span></div>
-      <div class="poc-notice" id="pocNotice"></div>
-      <div class="filter-bar">
-        <input type="text" id="pSearch" placeholder="Search HRMS, mobile..." oninput="renderPoc()" style="min-width:180px">
-        <select id="pStatus" onchange="renderPoc()">
-          <option value="">All</option><option value="done">Done</option><option value="pending">Pending</option>
-        </select>
-        <button class="btn" onclick="document.getElementById('pSearch').value='';document.getElementById('pStatus').value='';renderPoc()">Clear</button>
-      </div>
-      <div class="tbl-wrap-outer">
-      <div class="tbl-wrap" id="tblWrap2">
-        <table>
-          <colgroup>
-            <col style="width:36px">
-            <col style="width:90px">
-            <col style="width:80px">
-            <col style="width:130px">
-            <col style="width:90px">
-            <col style="width:180px">
-            <col style="width:90px">
-            <col style="width:80px">
-            <col style="width:105px">
-            <col style="width:70px">
-            <col style="width:65px">
-            <col style="width:80px">
-            <col style="width:100px">
-            <col style="width:65px">
-            <col style="width:65px">
-            <col style="width:65px">
-            <col style="width:65px">
-            <col style="width:65px">
-            <col style="width:65px">
-            <col style="width:115px">
-            <col style="width:175px">
-            <col style="width:170px">
-            <col style="width:70px">
-            <col style="width:55px">
-          </colgroup>
-          <thead><tr>
-            <th>#</th><th>Date</th><th>Project</th><th>Type 2</th><th>POC</th>
-            <th>Rider name</th><th>Passport</th><th>HRMS ID</th><th>Mobile</th>
-            <th>License</th><th>LMS</th><th>Special day</th><th>Shift timing</th>
-            <th>Planned</th><th>Achieved</th><th>Shifts</th><th>No show</th>
-            <th>Orders</th><th>Client</th>
-            <th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th>
-            <th>Status</th><th>Save</th>
-          </tr></thead>
-          <tbody id="pocTable"></tbody>
+  <col style="width:40px">   <!-- # -->
+  <col style="width:170px">  <!-- rider name - FROZEN -->
+  <col style="width:90px">   <!-- date -->
+  <col style="width:100px">  <!-- project -->
+  <col style="width:80px">   <!-- type -->
+  <col style="width:100px">  <!-- poc -->
+  <col style="width:100px">  <!-- passport -->
+  <col style="width:110px">  <!-- mobile -->
+  <col style="width:80px">   <!-- client -->
+  <col style="width:120px">  <!-- code -->
+  <col style="width:180px">  <!-- subcode -->
+  <col style="width:180px">  <!-- remarks -->
+  <col style="width:75px">   <!-- status -->
+  <col style="width:55px">   <!-- save -->
+</colgroup>
+<thead><tr>
+  <th>#</th>
+  <th>Rider name</th>
+  <th>Date</th>
+  <th>Project</th>
+  <th>Type</th>
+  <th>POC</th>
+  <th>Passport</th>
+  <th>Mobile</th>
+  <th>Client</th>
+  <th class="g">Code</th>
+  <th class="g">Subcode</th>
+  <th class="g">Remarks</th>
+  <th>Status</th>
+  <th>Save</th>
+</tr></thead>
+<tbody id="pocTable"></tbody>
         </table>
         <div id="pocEmpty" class="empty-state">No riders assigned to you yet. Ask your admin to upload today's CSV.</div>
       </div>
@@ -619,7 +551,7 @@ function loadCSV(e){
       if(!line.trim()) return;
       const cols=line.split(',');
       riders.push({ _id:uid(), date:gv(cols,ci.date)||new Date().toISOString().slice(0,10),
-        projtype:gv(cols,ci.projtype), type2:gv(cols,ci.type2), poc:gv(cols,ci.poc)||gv(cols,0),
+        projtype:gv(cols,ci.projtype), type:gv(cols,ci.type), type2:gv(cols,ci.type2), poc:gv(cols,ci.poc)||gv(cols,0),
         ridername:gv(cols,ci.ridername),
         passport:gv(cols,ci.passport),
         hrms:gv(cols,ci.hrms), mob:gv(cols,ci.mob), license:gv(cols,ci.license),
@@ -745,27 +677,17 @@ function renderAdmin(){
   empty.style.display='none';
   tbody.innerHTML=list.map((r,i)=>`<tr>
     <td style="color:#bbb;font-size:10px">${i+1}</td>
-    <td>${r.date}</td>
+    <td style="font-weight:600">${r.ridername||'—'}</td>
+    <td>${r.date||'—'}</td>
     <td>${r.projtype||'—'}</td>
-    <td>${r.type2||'—'}</td>
-    <td><span class="ini g">${ini(r.poc)}</span>${r.poc||'—'}</td>
-    <td style="font-weight:600;min-width:140px">${r.ridername||'—'}</td>
+    <td>${r.type||'—'}</td>
+    <td>${r.poc||'—'}</td>
     <td style="font-family:Consolas,monospace;font-size:11px">${r.passport||'—'}</td>
-    <td style="font-family:Consolas,monospace;font-size:11px">${r.hrms||'—'}</td>
     <td>${r.mob||'—'}</td>
-    <td>${r.license||'—'}</td>
-    <td style="font-size:11px">${r.lms||'—'}</td>
-    <td>${r.special||'—'}</td>
-    <td>${r.shift||'—'}</td>
-    <td>${r.planned||'—'}</td>
-    <td>${r.achieved||'—'}</td>
-    <td>${r.shiftcount||'—'}</td>
-    <td>${r.noshow||'—'}</td>
-    <td>${r.orders||'—'}</td>
     <td>${r.client||'—'}</td>
     <td style="background:rgba(220,255,220,.35)">${codeDD(r._id,r.code)}</td>
     <td style="background:rgba(220,255,220,.35)">${subDD(r._id,r.code,r.subcode)}</td>
-    <td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_${r._id}" value="${r.remarks}" placeholder="Remarks..."></td>
+    <td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_${r._id}" value="${r.remarks||''}" placeholder="Remarks..."></td>
     <td style="font-size:11px;color:#999">${r.updatedBy?'<span class="ini" style="width:19px;height:19px;font-size:8px">'+ini(r.updatedBy)+'</span>'+r.updatedBy:'—'}</td>
     <td><span class="badge ${r.status==='done'?'done':'pending'}">${r.status==='done'?'Done':'Pending'}</span></td>
     <td><button class="save-btn" onclick="saveRow('${r._id}')">Save</button></td>
@@ -790,18 +712,17 @@ function renderPoc(){
   if(!list.length){ tbody.innerHTML='<tr><td colspan="15" style="text-align:center;padding:2rem;color:#ccc;font-size:12px">No riders match your filter.</td></tr>'; return; }
   tbody.innerHTML=list.map((r,i)=>`<tr>
     <td style="color:#bbb;font-size:10px">${i+1}</td>
-    <td>${r.date}</td>
+    <td style="font-weight:600">${r.ridername||'—'}</td>
+    <td>${r.date||'—'}</td>
     <td>${r.projtype||'—'}</td>
-    <td style="font-family:Consolas,monospace;font-size:11px">${r.hrms||'—'}</td>
+    <td>${r.type||'—'}</td>
+    <td>${r.poc||'—'}</td>
+    <td style="font-family:Consolas,monospace;font-size:11px">${r.passport||'—'}</td>
     <td>${r.mob||'—'}</td>
-    <td>${r.shift||'—'}</td>
-    <td>${r.planned||'—'}</td>
-    <td>${r.achieved||'—'}</td>
-    <td>${r.orders||'—'}</td>
     <td>${r.client||'—'}</td>
     <td style="background:rgba(220,255,220,.35)">${codeDD(r._id,r.code)}</td>
     <td style="background:rgba(220,255,220,.35)">${subDD(r._id,r.code,r.subcode)}</td>
-    <td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_${r._id}" value="${r.remarks}" placeholder="Remarks..."></td>
+    <td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_${r._id}" value="${r.remarks||''}" placeholder="Remarks..."></td>
     <td><span class="badge ${r.status==='done'?'done':'pending'}">${r.status==='done'?'Done':'Pending'}</span></td>
     <td><button class="save-btn" onclick="saveRow('${r._id}')">Save</button></td>
   </tr>`).join('');
