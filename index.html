@@ -280,38 +280,76 @@ tr:hover td{background:#fafbff}
       <div class="tbl-wrap" id="tblWrap1">
         <table>
           <colgroup>
-  <col style="width:40px">   <!-- # -->
-  <col style="width:170px">  <!-- rider name - FROZEN -->
-  <col style="width:90px">   <!-- date -->
-  <col style="width:100px">  <!-- project -->
-  <col style="width:80px">   <!-- type -->
-  <col style="width:100px">  <!-- poc -->
-  <col style="width:100px">  <!-- passport -->
-  <col style="width:110px">  <!-- mobile -->
-  <col style="width:80px">   <!-- client -->
-  <col style="width:120px">  <!-- code -->
-  <col style="width:180px">  <!-- subcode -->
-  <col style="width:180px">  <!-- remarks -->
-  <col style="width:75px">   <!-- status -->
-  <col style="width:55px">   <!-- save -->
-</colgroup>
-<thead><tr>
-  <th>#</th>
-  <th>Rider name</th>
-  <th>Date</th>
-  <th>Project</th>
-  <th>Type</th>
-  <th>POC</th>
-  <th>Passport</th>
-  <th>Mobile</th>
-  <th>Client</th>
-  <th class="g">Code</th>
-  <th class="g">Subcode</th>
-  <th class="g">Remarks</th>
-  <th>Status</th>
-  <th>Save</th>
-</tr></thead>
-<tbody id="pocTable"></tbody>
+            <col style="width:40px">
+            <col style="width:170px">
+            <col style="width:90px">
+            <col style="width:100px">
+            <col style="width:80px">
+            <col style="width:100px">
+            <col style="width:100px">
+            <col style="width:110px">
+            <col style="width:80px">
+            <col style="width:120px">
+            <col style="width:180px">
+            <col style="width:180px">
+            <col style="width:95px">
+            <col style="width:75px">
+            <col style="width:55px">
+            <col style="width:42px">
+          </colgroup>
+          <thead><tr>
+            <th>#</th><th>Rider name</th><th>Date</th><th>Project</th><th>Type</th>
+            <th>POC</th><th>Passport</th><th>Mobile</th><th>Client</th>
+            <th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th>
+            <th>Updated by</th><th>Status</th><th>Save</th><th>Del</th>
+          </tr></thead>
+          <tbody id="adminTable"></tbody>
+        </table>
+        <div id="adminEmpty" class="empty-state">No riders loaded. Upload your CSV above.</div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POC VIEW -->
+  <div id="pocView" style="display:none">
+    <div class="stats" id="pocStats"></div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">Your assigned riders — select code, subcode &amp; add remarks</span></div>
+      <div class="poc-notice" id="pocNotice"></div>
+      <div class="filter-bar">
+        <input type="text" id="pSearch" placeholder="Search name, passport, mobile..." oninput="renderPoc()" style="min-width:180px">
+        <select id="pStatus" onchange="renderPoc()">
+          <option value="">All</option><option value="done">Done</option><option value="pending">Pending</option>
+        </select>
+        <button class="btn" onclick="document.getElementById('pSearch').value='';document.getElementById('pStatus').value='';renderPoc()">Clear</button>
+      </div>
+      <div class="tbl-wrap-outer">
+      <div class="tbl-wrap" id="tblWrap2">
+        <table>
+          <colgroup>
+            <col style="width:40px">
+            <col style="width:170px">
+            <col style="width:90px">
+            <col style="width:100px">
+            <col style="width:80px">
+            <col style="width:100px">
+            <col style="width:100px">
+            <col style="width:110px">
+            <col style="width:80px">
+            <col style="width:120px">
+            <col style="width:180px">
+            <col style="width:180px">
+            <col style="width:75px">
+            <col style="width:55px">
+          </colgroup>
+          <thead><tr>
+            <th>#</th><th>Rider name</th><th>Date</th><th>Project</th><th>Type</th>
+            <th>POC</th><th>Passport</th><th>Mobile</th><th>Client</th>
+            <th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th>
+            <th>Status</th><th>Save</th>
+          </tr></thead>
+          <tbody id="pocTable"></tbody>
         </table>
         <div id="pocEmpty" class="empty-state">No riders assigned to you yet. Ask your admin to upload today's CSV.</div>
       </div>
@@ -669,8 +707,9 @@ function renderAdmin(){
   const pf=document.getElementById('aPoc'), cp=pf.value;
   pf.innerHTML='<option value="">All POCs</option>'+pocs.map(p=>`<option value="${p}"${p===cp?' selected':''}>${p}</option>`).join('');
   const tbody=document.getElementById('adminTable'), empty=document.getElementById('adminEmpty');
-  if(!list.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
+  if(!tbody) return;
+  if(!list.length){ tbody.innerHTML=''; if(empty) empty.style.display='block'; return; }
+  if(empty) empty.style.display='none';
   tbody.innerHTML=list.map((r,i)=>`<tr>
     <td style="color:#bbb;font-size:10px">${i+1}</td>
     <td style="font-weight:600">${r.ridername||'—'}</td>
@@ -696,15 +735,16 @@ function renderPoc(){
   const myRiders=riders.filter(r=>r.poc&&r.poc.toLowerCase().trim()===currentUser.toLowerCase().trim());
   renderStats('pocStats', myRiders);
   const done=myRiders.filter(r=>r.status==='done').length;
-  document.getElementById('pocNotice').innerHTML=`Riders assigned to <strong>${currentUser}</strong> &nbsp;|&nbsp; ${done} of ${myRiders.length} updated`;
+  const noticeEl=document.getElementById('pocNotice'); if(noticeEl) noticeEl.innerHTML=`Riders assigned to <strong>${currentUser}</strong> &nbsp;|&nbsp; ${done} of ${myRiders.length} updated`;
   const q=document.getElementById('pSearch').value.toLowerCase();
   const st=document.getElementById('pStatus').value;
   let list=myRiders;
   if(st) list=list.filter(r=>r.status===st);
   if(q) list=list.filter(r=>(r.hrms+r.mob).toLowerCase().includes(q));
   const tbody=document.getElementById('pocTable'), empty=document.getElementById('pocEmpty');
-  if(!myRiders.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
+  if(!tbody) return;
+  if(!myRiders.length){ tbody.innerHTML=''; if(empty) empty.style.display='block'; return; }
+  if(empty) empty.style.display='none';
   if(!list.length){ tbody.innerHTML='<tr><td colspan="15" style="text-align:center;padding:2rem;color:#ccc;font-size:12px">No riders match your filter.</td></tr>'; return; }
   tbody.innerHTML=list.map((r,i)=>`<tr>
     <td style="color:#bbb;font-size:10px">${i+1}</td>
