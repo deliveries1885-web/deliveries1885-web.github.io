@@ -60,7 +60,7 @@ body{font-family:Segoe UI,system-ui,sans-serif;background:#f0f2f5;min-height:100
 .filter-bar{display:flex;gap:8px;padding:9px 16px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;align-items:center;background:#fafafa}
 .filter-bar input,.filter-bar select{font-size:12px;padding:5px 9px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#333;font-family:inherit}
 .poc-notice{padding:7px 16px;background:#f0faf0;border-bottom:1px solid #c8e8c8;font-size:12px;color:#1a5c1a;font-weight:600}
-.tbl-wrap{overflow-x:scroll;scrollbar-width:thick;scrollbar-color:#0078d4 #cce0f5}
+.tbl-wrap{overflow-x:scroll;scrollbar-width:thick;scrollbar-color:#0078d4 #cce0f5;position:relative}
 .tbl-wrap::-webkit-scrollbar{height:16px;display:block}
 .tbl-wrap::-webkit-scrollbar-track{background:#cce0f5}
 .tbl-wrap::-webkit-scrollbar-thumb{background:#0078d4;border-radius:8px;border:3px solid #cce0f5;min-width:60px}
@@ -70,9 +70,10 @@ th{text-align:left;font-size:10px;font-weight:700;color:#666;padding:7px 9px;bor
 th.g{background:#f0faf0;color:#107c10}
 td{padding:6px 9px;border-bottom:1px solid #f5f5f5;vertical-align:middle;white-space:nowrap}
 tr:hover td{background:#fafbff}
-th:nth-child(1),td:nth-child(1){position:sticky;left:0;z-index:2;background:#f8f8f8;border-right:1px solid #eee;min-width:36px}
-th:nth-child(2),td:nth-child(2){position:sticky;left:36px;z-index:2;background:#f8f8f8;border-right:2px solid #0078d4;min-width:180px}
-td:nth-child(1),td:nth-child(2){background:#fff}
+th:nth-child(1),td:nth-child(1){position:sticky;left:0;z-index:3;background:#f8f8f8;border-right:1px solid #ddd;width:36px;max-width:36px}
+th:nth-child(2),td:nth-child(2){position:sticky;left:36px;z-index:3;background:#fff;border-right:2px solid #0078d4;width:200px;max-width:200px;min-width:200px}
+th:nth-child(1){background:#f8f8f8;z-index:4}
+th:nth-child(2){background:#f8f8f8;z-index:4}
 tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#f0f6ff}
 .mini{font-size:11px;padding:4px 7px;border-radius:5px;border:1px solid #ddd;background:#fff;color:#1a1a1a;cursor:pointer;font-family:inherit}
 .mini:focus{outline:none;border-color:#0078d4}
@@ -122,6 +123,7 @@ tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#f0f6ff}
       <div class="sync-row" id="syncRow" onclick="connectOneDrive()"><div class="sync-dot" id="syncDot"></div><span id="syncText">Not connected</span></div>
       <button class="btn green" id="exportBtn" style="display:none" onclick="exportCSV()">Export CSV</button>
       <button class="btn blue" id="syncGhBtn" onclick="forceSyncGitHub()">&#8593; Sync to GitHub</button>
+      <button class="btn" id="refreshGhBtn" onclick="refreshFromGitHub()" style="display:none">&#8595; Pull POC updates</button>
       <button class="btn" onclick="logout()">Sign out</button>
     </div>
   </div>
@@ -209,11 +211,48 @@ async function saveToGitHub(){const base='https://api.github.com/repos/'+CRM_CON
 async function loadFromGitHub(){try{const url='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();const r=await fetch(url);if(r.ok){const t=await r.text();if(t&&t.trim().startsWith('[')){riders=JSON.parse(t);localSave();return true;}}}catch(e){}return false;}
 function initMsal(){try{msalApp=new msal.PublicClientApplication({auth:{clientId:CRM_CONFIG.clientId,authority:'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',redirectUri:'https://deliveries1885-web.github.io/absence-crm'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});msalApp.handleRedirectPromise().then(resp=>{if(resp&&resp.accessToken){accessToken=resp.accessToken;onConnected();return;}const accts=msalApp.getAllAccounts();if(accts.length>0){msalApp.acquireTokenSilent({account:accts[0],scopes:['Files.ReadWrite']}).then(r=>{accessToken=r.accessToken;onConnected();}).catch(()=>setSyncStatus('','Click to connect OneDrive'));}else{setSyncStatus('','Click to connect OneDrive');}}).catch(()=>setSyncStatus('','Click to connect OneDrive'));}catch(e){setSyncStatus('err','MSAL error: '+e.message);}}
 async function connectOneDrive(){if(!msalApp){toast('Not initialized.');return;}if(accessToken){toast('Already connected!');return;}setSyncStatus('spin','Connecting...');try{const r=await msalApp.acquireTokenPopup({scopes:['Files.ReadWrite']});accessToken=r.accessToken;await onConnected();}catch(e){setSyncStatus('err','Sign-in failed');toast('OneDrive sign-in failed.');}}
-async function onConnected(){setSyncStatus('spin','Loading...');await loadFromOneDrive();setSyncStatus('ok','Connected to OneDrive');if(currentRole==='admin')renderAdmin();else renderPoc();}
+async function onConnected(){
+  setSyncStatus('spin','Loading...');
+  // Load from GitHub first (has latest POC updates), then merge with OneDrive
+  await loadFromOneDrive();
+  setSyncStatus('ok','Connected to OneDrive');
+  if(currentRole==='admin')renderAdmin();else renderPoc();
+}
 async function getOrCreateFile(){if(driveItemId)return driveItemId;try{const r=await fetch('https://graph.microsoft.com/v1.0/me/drive/root:/'+CRM_CONFIG.fileName,{headers:{'Authorization':'Bearer '+accessToken}});if(r.ok){const d=await r.json();driveItemId=d.id;return driveItemId;}}catch(e){}const r2=await fetch('https://graph.microsoft.com/v1.0/me/drive/root:/'+CRM_CONFIG.fileName+':/content',{method:'PUT',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:'[]'});const d2=await r2.json();driveItemId=d2.id;return driveItemId;}
 async function saveToOneDrive(){localSave();if(!accessToken)return;setSyncStatus('spin','Saving...');try{const id=await getOrCreateFile();await fetch('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/content',{method:'PUT',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(riders)});setSyncStatus('ok','Saved to OneDrive');setLastSync();try{await saveToGitHub();setSyncStatus('ok','Saved + Synced');}catch(e){console.log('GitHub sync:',e.message);}}catch(e){setSyncStatus('err','Save failed');console.error(e);}}
-async function loadFromOneDrive(){if(!accessToken){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');return;}try{const id=await getOrCreateFile();const r=await fetch('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/content',{headers:{'Authorization':'Bearer '+accessToken}});const text=await r.text();riders=text?JSON.parse(text):[];localSave();setLastSync();}catch(e){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');}}
-function doLogin(){const name=document.getElementById('loginName').value.trim();const role=document.getElementById('loginRole').value;const pin=document.getElementById('adminPin').value;if(!name){alert('Enter your name.');return;}if(role==='admin'&&pin!==CRM_CONFIG.adminPin){alert('Wrong PIN.');return;}currentUser=name;currentRole=role;document.getElementById('loginOuter').style.display='none';document.getElementById('mainApp').style.display='block';const pill=document.getElementById('topPill');if(role==='admin'){pill.textContent='Admin';pill.className='pill blue';document.getElementById('exportBtn').style.display='inline-block';document.getElementById('adminView').style.display='block';}else{pill.textContent=name;pill.className='pill green';document.getElementById('pocView').style.display='block';}riders=JSON.parse(localStorage.getItem('crm_final')||'[]');if(role==='admin'){renderAdmin();initMsal();}else{renderPoc();setSyncStatus('spin','Loading data...');loadFromGitHub().then(ok=>{if(ok){setSyncStatus('ok','Data loaded');setLastSync();renderPoc();}else{setSyncStatus('','Using local data');}}).catch(()=>setSyncStatus('','Using local data'));}}
+async function loadFromOneDrive(){
+  if(!accessToken){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');return;}
+  try{
+    const id=await getOrCreateFile();
+    const r=await fetch('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/content',{headers:{'Authorization':'Bearer '+accessToken}});
+    const text=await r.text();
+    const oneDriveData=text?JSON.parse(text):[];
+    
+    // Also get latest from GitHub (has POC updates)
+    try{
+      const ghUrl='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();
+      const ghR=await fetch(ghUrl);
+      if(ghR.ok){
+        const ghText=await ghR.text();
+        if(ghText&&ghText.trim().startsWith('[')){
+          const ghData=JSON.parse(ghText);
+          // Merge: use GitHub data as base (has POC updates), keep same rider list
+          if(ghData.length>0){
+            // Map GitHub updates onto OneDrive data by _id
+            const ghMap={};
+            ghData.forEach(r=>{ghMap[r._id]=r;});
+            riders=oneDriveData.map(r=>ghMap[r._id]?{...r,...ghMap[r._id]}:r);
+          } else {
+            riders=oneDriveData;
+          }
+        } else { riders=oneDriveData; }
+      } else { riders=oneDriveData; }
+    } catch(e){ riders=oneDriveData; }
+    
+    localSave();setLastSync();
+  }catch(e){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');}
+}
+function doLogin(){const name=document.getElementById('loginName').value.trim();const role=document.getElementById('loginRole').value;const pin=document.getElementById('adminPin').value;if(!name){alert('Enter your name.');return;}if(role==='admin'&&pin!==CRM_CONFIG.adminPin){alert('Wrong PIN.');return;}currentUser=name;currentRole=role;document.getElementById('loginOuter').style.display='none';document.getElementById('mainApp').style.display='block';const pill=document.getElementById('topPill');if(role==='admin'){pill.textContent='Admin';pill.className='pill blue';document.getElementById('exportBtn').style.display='inline-block';document.getElementById('refreshGhBtn').style.display='inline-block';document.getElementById('adminView').style.display='block';}else{pill.textContent=name;pill.className='pill green';document.getElementById('pocView').style.display='block';}riders=JSON.parse(localStorage.getItem('crm_final')||'[]');if(role==='admin'){renderAdmin();initMsal();}else{renderPoc();setSyncStatus('spin','Loading data...');loadFromGitHub().then(ok=>{if(ok){setSyncStatus('ok','Data loaded');setLastSync();renderPoc();}else{setSyncStatus('','Using local data');}}).catch(()=>setSyncStatus('','Using local data'));}}
 function logout(){currentUser=null;currentRole=null;accessToken=null;driveItemId=null;document.getElementById('mainApp').style.display='none';document.getElementById('loginOuter').style.display='flex';document.getElementById('adminView').style.display='none';document.getElementById('pocView').style.display='none';document.getElementById('exportBtn').style.display='none';document.getElementById('loginName').value='';document.getElementById('adminPin').value='';document.getElementById('loginRole').value='poc';document.getElementById('pinRow').style.display='none';}
 function fc(h,kws){for(const kw of kws){const i=h.findIndex(x=>x.toLowerCase().replace(/[\s_]/g,'').includes(kw.toLowerCase()));if(i>=0)return i;}return -1;}
 function gv(cols,i){return i>=0&&cols[i]?cols[i].trim().replace(/^"|"$/g,''):''}
@@ -226,6 +265,33 @@ function renderPoc(){const myRiders=riders.filter(r=>r.poc&&r.poc.toLowerCase().
 async function saveRow(id){const r=riders.find(x=>x._id===id);if(!r)return;const code=(document.getElementById('c_'+id)||{}).value||'';const sub=(document.getElementById('s_'+id)||{}).value||'';if(!code){toast('Please select a Code.');return;}if(CODE_MAP[code]&&CODE_MAP[code].length>0&&!sub){toast('Please select a Subcode.');return;}r.code=code;r.subcode=sub;r.remarks=(document.getElementById('rem_'+id)||{}).value||'';r.updatedBy=currentUser;r.updatedAt=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});r.status='done';if(currentRole==='poc'){localSave();setSyncStatus('spin','Saving...');try{await saveToGitHub();setSyncStatus('ok','Saved!');setLastSync();}catch(e){setSyncStatus('err','Save failed');console.error(e);}renderPoc();}else{await saveToOneDrive();renderAdmin();}toast('Saved!');}
 async function delRow(id){if(!confirm('Remove this rider?'))return;riders=riders.filter(x=>x._id!==id);await saveToOneDrive();renderAdmin();}
 async function clearAll(){if(!confirm('Delete ALL rider data?'))return;riders=[];await saveToOneDrive();try{await saveToGitHub();}catch(e){}renderAdmin();}
+async function refreshFromGitHub(){
+  setSyncStatus('spin','Pulling POC updates...');
+  try{
+    const url='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();
+    const r=await fetch(url);
+    if(r.ok){
+      const text=await r.text();
+      if(text&&text.trim().startsWith('[')){
+        const ghData=JSON.parse(text);
+        // Merge POC updates into current admin data
+        const ghMap={};
+        ghData.forEach(r=>{ghMap[r._id]=r;});
+        riders=riders.map(r=>ghMap[r._id]?{...r,...ghMap[r._id]}:r);
+        localSave();
+        // Save merged data back to OneDrive
+        if(accessToken) await saveToOneDrive();
+        setSyncStatus('ok','POC updates pulled!');
+        toast('POC updates loaded!');
+        renderAdmin();
+        return;
+      }
+    }
+    setSyncStatus('err','Pull failed');
+    toast('Could not pull updates');
+  }catch(e){setSyncStatus('err','Pull failed');console.error(e);}
+}
+
 async function forceSyncGitHub(){
   if(!riders.length){ toast('No data to sync!'); return; }
   setSyncStatus('spin','Syncing to GitHub...');
