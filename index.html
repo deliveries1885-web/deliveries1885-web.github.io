@@ -14,7 +14,7 @@ const CRM_CONFIG = {
   clientId:      "8a033239-ba9e-4731-908b-2d25da6975ad",
   adminPin:      "1234",
   fileName:      "RiderAbsenceCRM_Data.json",
-  publicDataUrl: "https://eightyfivedeliverys-my.sharepoint.com/:u:/g/personal/info_1885_ae/IQCSLPElEBOoRr7_b9S6MiZwAegTVNp3b1wS-H011qkxn9U?download=1"
+  publicDataUrl: "https://eightyfivedeliverys-my.sharepoint.com/:u:/g/personal/info_1885_ae/IQCSLPElEBOoRr7_b9S6MiZwAZ32pmZk9mDAI02atRpl2uY?e=08M4VW&download=1"
 };
 </script>
 
@@ -565,9 +565,8 @@ function doLogin(){
     renderAdmin();
     initMsal();
   } else {
-    // POC - load from public URL then init MSAL silently for saving
-    loadFromOneDrive(); // loads from public URL for POCs
-    initMsal(); // init silently for save functionality
+    // POC - load from public URL, no Microsoft login needed
+    pocLoadAndSave();
   }
 }
 
