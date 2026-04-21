@@ -708,6 +708,42 @@ function renderPoc(){
 }
 
 // ── Export CSV ────────────────────────────────────────────────
+
+async function saveRow(id){
+  const r=riders.find(x=>x._id===id); if(!r) return;
+  const code=(document.getElementById('c_'+id)||{}).value||'';
+  const sub=(document.getElementById('s_'+id)||{}).value||'';
+  if(!code){ toast('Please select a Code.'); return; }
+  if(CODE_MAP[code]&&CODE_MAP[code].length>0&&!sub){ toast('Please select a Subcode.'); return; }
+  r.code=code; r.subcode=sub;
+  r.remarks=(document.getElementById('rem_'+id)||{}).value||'';
+  r.updatedBy=currentUser;
+  r.updatedAt=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  r.status='done';
+  if(currentRole==='poc'){
+    localSave();
+    setSyncStatus('spin','Saving...');
+    try{ await saveToGitHub(); setSyncStatus('ok','Saved!'); setLastSync(); }
+    catch(e){ setSyncStatus('err','Save failed'); console.error(e); }
+    renderPoc();
+  } else {
+    await saveToOneDrive();
+    renderAdmin();
+  }
+  toast('Saved!');
+}
+
+async function delRow(id){
+  if(!confirm('Remove this rider?')) return;
+  riders=riders.filter(x=>x._id!==id);
+  await saveToOneDrive(); renderAdmin();
+}
+
+async function clearAll(){
+  if(!confirm('Delete ALL rider data?')) return;
+  riders=[];
+  await saveToOneDrive(); renderAdmin();
+}
 function exportCSV(){
   const fields=['date','projtype','type2','poc','hrms','mob','license','lms','special','shift','planned','achieved','shiftcount','noshow','orders','client','code','subcode','remarks','updatedBy','updatedAt','status'];
   const labels=['Date','ProjectType','Type2','POCName','PassportHRMSID','Mob','LicenseNo','NewLMSLogin','SpecialDay','ShiftTiming','PlannedHrs','AchievedHrs','TotalShiftCount','NoShowShift','Orders','ClientAttendance','Code','Subcode','Remarks','UpdatedBy','UpdatedAt','Status'];
