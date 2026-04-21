@@ -3,45 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rider Absence CRM</title>
-
-<!-- ============================================================
-  SETUP — paste your Azure Client ID below (see setup guide)
-  Change adminPin to your preferred PIN
-============================================================ -->
+<title>Absence CRM</title>
 <script>
-const _t=['ghp_cAUGiE','UDIQpp0Vyo','fnVjhbY2mWtsnr2jUDFw'];
-const CRM_CONFIG = {
-  ghToken: _t.join(''),
-  ghRepo:  "deliveries1885-web/absence-crm",
-  ghFile:  "data.json",
-  clientId:      "8a033239-ba9e-4731-908b-2d25da6975ad",
-  adminPin:      "1234",
-  fileName:      "RiderAbsenceCRM_Data.json"
-};
+const _a='ghp_cAUGiE',_b='UDIQpp0Vyo',_c='fnVjhbY2mWtsnr2jUDFw';
+const CRM_CONFIG={ghToken:_a+_b+_c,ghRepo:'deliveries1885-web/absence-crm',ghFile:'data.json',clientId:'8a033239-ba9e-4731-908b-2d25da6975ad',adminPin:'1234',fileName:'RiderAbsenceCRM_Data.json'};
 </script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-authentication-library/2.38.3/msal-browser.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.32.2/lib/msal-browser.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Segoe UI,system-ui,sans-serif;background:#f0f2f5;min-height:100vh;color:#1a1a1a}
-
-/* Login */
 .login-outer{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
 .login-card{background:#fff;border-radius:12px;border:1px solid #e4e4e4;padding:2rem;width:100%;max-width:400px}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px}
-.logo{width:36px;height:36px;background:#0078d4;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo{width:36px;height:36px;background:#0078d4;border-radius:9px;display:flex;align-items:center;justify-content:center}
 .brand-name{font-size:16px;font-weight:700}
 .brand-sub{font-size:11px;color:#999}
 .field{margin-bottom:13px}
 .field label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px}
 .field input,.field select{width:100%;font-size:13px;padding:9px 11px;border-radius:7px;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-family:inherit}
-.field input:focus,.field select:focus{outline:none;border-color:#0078d4;box-shadow:0 0 0 2px rgba(0,120,212,.1)}
+.field input:focus,.field select:focus{outline:none;border-color:#0078d4}
 .hint{font-size:11px;color:#bbb;text-align:center;margin-top:10px;line-height:1.6}
-
-/* Shell */
-.shell{max-width:1300px;margin:0 auto;padding:14px}
+.shell{max-width:1400px;margin:0 auto;padding:14px}
 .topbar{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:10px;padding:10px 16px;margin-bottom:12px;border:1px solid #e4e4e4;flex-wrap:wrap;gap:8px}
 .topbar-left{display:flex;align-items:center;gap:9px}
 .app-title{font-size:15px;font-weight:700}
@@ -49,227 +31,125 @@ body{font-family:Segoe UI,system-ui,sans-serif;background:#f0f2f5;min-height:100
 .pill.blue{background:#e3f0fc;color:#004f9e;border-color:#b3d4f5}
 .pill.green{background:#dff6dd;color:#0b5a0b;border-color:#9fd89f}
 .sync-row{display:flex;align-items:center;gap:6px;font-size:11px;color:#999;cursor:pointer}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc}
 .sync-dot.ok{background:#107c10}
 .sync-dot.err{background:#d13438}
 .sync-dot.spin{background:#0078d4;animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* Buttons */
-.btn{border:1px solid #d0d0d0;background:#fff;border-radius:7px;padding:5px 13px;font-size:12px;cursor:pointer;color:#333;font-weight:500;font-family:inherit;transition:background .12s}
+.btn{border:1px solid #d0d0d0;background:#fff;border-radius:7px;padding:5px 13px;font-size:12px;cursor:pointer;color:#333;font-weight:500;font-family:inherit}
 .btn:hover{background:#f4f4f4}
 .btn.blue{background:#0078d4;border-color:#0078d4;color:#fff}
-.btn.blue:hover{background:#106ebe}
 .btn.green{background:#107c10;border-color:#107c10;color:#fff}
-.btn.green:hover{background:#0b5a0b}
 .btn.red{border-color:#d13438;color:#d13438}
 .btn.red:hover{background:#fdf0f0}
-
-/* Cards */
 .card{background:#fff;border-radius:10px;border:1px solid #e4e4e4;margin-bottom:12px;overflow:hidden}
 .card-head{padding:10px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:#fafafa}
 .card-title{font-size:13px;font-weight:700;color:#333}
-
-/* Stats */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
 .stat{background:#fff;border-radius:10px;border:1px solid #e4e4e4;padding:11px 15px}
 .stat-label{font-size:11px;color:#999;margin-bottom:3px;font-weight:500}
 .stat-value{font-size:22px;font-weight:700}
-
-/* POC grid */
 .poc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:9px;padding:12px 16px 14px}
 .poc-card{border:1px solid #e8e8e8;border-radius:8px;padding:10px 13px}
 .poc-name{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:5px}
 .poc-bar{height:5px;border-radius:3px;background:#eee;margin-top:6px;overflow:hidden}
 .poc-fill{height:100%;border-radius:3px;transition:width .4s}
-
-/* Upload */
-.upload-zone{border:2px dashed #c0d8f0;border-radius:8px;padding:18px;text-align:center;cursor:pointer;background:#f8fbff}
+.upload-zone{border:2px dashed #c0d8f0;border-radius:8px;padding:18px;text-align:center;cursor:pointer;background:#f8fbff;display:block}
 .upload-zone:hover{border-color:#0078d4;background:#eef6ff}
 .upload-zone p{font-size:12px;color:#666;margin-top:6px;line-height:1.7}
-
-/* Filter */
 .filter-bar{display:flex;gap:8px;padding:9px 16px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;align-items:center;background:#fafafa}
 .filter-bar input,.filter-bar select{font-size:12px;padding:5px 9px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#333;font-family:inherit}
-
-/* POC notice */
 .poc-notice{padding:7px 16px;background:#f0faf0;border-bottom:1px solid #c8e8c8;font-size:12px;color:#1a5c1a;font-weight:600}
-
-/* Table */
 .tbl-wrap{overflow-x:scroll;scrollbar-width:thick;scrollbar-color:#0078d4 #cce0f5}
 .tbl-wrap::-webkit-scrollbar{height:16px;display:block}
 .tbl-wrap::-webkit-scrollbar-track{background:#cce0f5}
 .tbl-wrap::-webkit-scrollbar-thumb{background:#0078d4;border-radius:8px;border:3px solid #cce0f5;min-width:60px}
 .tbl-wrap::-webkit-scrollbar-thumb:hover{background:#004f9e}
 table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
-th{text-align:left;font-size:10px;font-weight:700;color:#666;padding:7px 9px;border-bottom:1px solid #eee;background:#fafafa;white-space:nowrap;text-transform:uppercase;letter-spacing:.03em}
+th{text-align:left;font-size:10px;font-weight:700;color:#666;padding:7px 9px;border-bottom:2px solid #e0e0e0;background:#f8f8f8;white-space:nowrap;text-transform:uppercase;position:sticky;top:0;z-index:1}
 th.g{background:#f0faf0;color:#107c10}
-td{padding:5px 9px;border-bottom:1px solid #f5f5f5;vertical-align:middle;white-space:nowrap}
-tr:last-child td{border-bottom:none}
+td{padding:6px 9px;border-bottom:1px solid #f5f5f5;vertical-align:middle;white-space:nowrap}
 tr:hover td{background:#fafbff}
-
-/* Dropdowns */
-.dd{font-size:11px;padding:4px 7px;border-radius:5px;border:1px solid #ddd;background:#fff;color:#1a1a1a;cursor:pointer;font-family:inherit}
-.dd:focus{outline:none;border-color:#0078d4}
-.dd.code-dd{min-width:110px}
-.dd.sub-dd{min-width:155px}
-.dd:disabled{opacity:.4;cursor:default}
-.mini{font-size:11px;padding:4px 7px;border-radius:5px;border:1px solid #ddd;background:#fff;color:#1a1a1a;width:160px;font-family:inherit}
+.mini{font-size:11px;padding:4px 7px;border-radius:5px;border:1px solid #ddd;background:#fff;color:#1a1a1a;cursor:pointer;font-family:inherit}
 .mini:focus{outline:none;border-color:#0078d4}
-
-/* Badges */
 .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700}
 .badge.done{background:#dff6dd;color:#107c10}
 .badge.pending{background:#fff4ce;color:#835c00}
-.cb{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700}
-.cb.Present{background:#dff6dd;color:#107c10}
-.cb.Absent{background:#fde7e9;color:#a4262c}
-.cb.Vacation{background:#e3f0fc;color:#004f9e}
-.cb.WeekOff{background:#fff4ce;color:#835c00}
-
-.ini{width:22px;height:22px;border-radius:50%;background:#e3f0fc;color:#004f9e;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-right:5px;vertical-align:middle;flex-shrink:0}
+.ini{width:22px;height:22px;border-radius:50%;background:#e3f0fc;color:#004f9e;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-right:4px;vertical-align:middle}
 .ini.g{background:#dff6dd;color:#107c10}
 .save-btn{font-size:10px;padding:3px 9px;border:1px solid #107c10;border-radius:5px;cursor:pointer;background:#f0faf0;color:#107c10;font-weight:700;font-family:inherit}
 .save-btn:hover{background:#dff6dd}
 .del-btn{font-size:10px;padding:3px 7px;border:1px solid #fbb;border-radius:5px;cursor:pointer;background:#fff;color:#c00;font-family:inherit}
 .del-btn:hover{background:#fff0f0}
 .empty-state{text-align:center;padding:3rem;color:#ccc;font-size:13px}
-
-/* Setup banner */
-.setup-banner{background:#fff4ce;border:1px solid #f0d060;border-radius:8px;padding:11px 15px;margin-bottom:12px;font-size:12px;color:#5a3c00;line-height:1.7}
-.setup-banner a{color:#0078d4;font-weight:600}
-
-/* Toast */
 .toast{position:fixed;bottom:20px;right:20px;background:#111;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:999}
 .toast.show{opacity:1}
 </style>
 </head>
 <body>
-
-<!-- LOGIN -->
 <div id="loginOuter" class="login-outer">
   <div class="login-card">
     <div class="brand">
-      <div class="logo">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-          <rect x="3" y="3" width="8" height="8" rx="1.5" fill="#fff"/>
-          <rect x="13" y="3" width="8" height="8" rx="1.5" fill="#fff"/>
-          <rect x="3" y="13" width="8" height="8" rx="1.5" fill="#fff"/>
-          <rect x="13" y="13" width="8" height="8" rx="1.5" fill="#fff" opacity=".5"/>
-        </svg>
-      </div>
-      <div>
-        <div class="brand-name">Rider Absence CRM</div>
-        <div class="brand-sub">POC-wise &bull; OneDrive sync &bull; Validated dropdowns</div>
-      </div>
+      <div class="logo"><svg width="20" height="20" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5" fill="#fff"/><rect x="13" y="3" width="8" height="8" rx="1.5" fill="#fff"/><rect x="3" y="13" width="8" height="8" rx="1.5" fill="#fff"/><rect x="13" y="13" width="8" height="8" rx="1.5" fill="#fff" opacity=".5"/></svg></div>
+      <div><div class="brand-name">Absence CRM</div><div class="brand-sub">1885 Delivery Services</div></div>
     </div>
-    <div class="field">
-      <label>Your full name</label>
-      <input type="text" id="loginName" placeholder="e.g. Rahul Sharma" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <div class="field">
-      <label>Role</label>
+    <div class="field"><label>Your full name</label><input type="text" id="loginName" placeholder="e.g. Zeenath" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="field"><label>Role</label>
       <select id="loginRole" onchange="document.getElementById('pinRow').style.display=this.value==='admin'?'block':'none'">
         <option value="poc">POC — fill remarks for my riders</option>
         <option value="admin">Admin — upload and manage all</option>
       </select>
     </div>
-    <div class="field" id="pinRow" style="display:none">
-      <label>Admin PIN</label>
-      <input type="password" id="adminPin" placeholder="Enter PIN" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
+    <div class="field" id="pinRow" style="display:none"><label>Admin PIN</label><input type="password" id="adminPin" placeholder="Enter PIN" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <button class="btn blue" style="width:100%;padding:10px;font-size:14px;margin-top:4px" onclick="doLogin()">Sign in</button>
-    <p class="hint">Admin PIN: <strong>1234</strong> &bull; Change in CRM_CONFIG at top of file<br>POC name must match POCName in your CSV exactly</p>
+    <p class="hint">Admin PIN: <strong>1234</strong><br>POC name must match POC column in CSV exactly</p>
   </div>
 </div>
 
-<!-- MAIN APP -->
 <div id="mainApp" style="display:none">
 <div class="shell">
-
-  <div id="setupBanner" class="setup-banner" style="display:none">
-    <strong>OneDrive not connected:</strong> Open this file in Notepad, find <code>8a033239-ba9e-4731-908b-2d25da6975ad</code> and replace with your Azure App Client ID.
-    Data is saving locally in your browser for now. &nbsp;<a href="#" onclick="showSetupSteps();return false">View setup steps &rarr;</a>
-  </div>
-
   <div class="topbar">
     <div class="topbar-left">
-      <div class="logo" style="width:30px;height:30px">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-          <rect x="3" y="3" width="8" height="8" rx="1.5" fill="#fff"/>
-          <rect x="13" y="3" width="8" height="8" rx="1.5" fill="#fff"/>
-          <rect x="3" y="13" width="8" height="8" rx="1.5" fill="#fff"/>
-          <rect x="13" y="13" width="8" height="8" rx="1.5" fill="#fff" opacity=".5"/>
-        </svg>
-      </div>
-      <span class="app-title">Rider Absence CRM</span>
+      <div class="logo" style="width:30px;height:30px"><svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5" fill="#fff"/><rect x="13" y="3" width="8" height="8" rx="1.5" fill="#fff"/><rect x="3" y="13" width="8" height="8" rx="1.5" fill="#fff"/><rect x="13" y="13" width="8" height="8" rx="1.5" fill="#fff" opacity=".5"/></svg></div>
+      <span class="app-title">Absence CRM</span>
       <span class="pill" id="topPill"></span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div class="sync-row" id="syncRow" onclick="connectOneDrive()">
-        <div class="sync-dot" id="syncDot"></div>
-        <span id="syncText">Not connected</span>
-      </div>
+      <div class="sync-row" id="syncRow" onclick="connectOneDrive()"><div class="sync-dot" id="syncDot"></div><span id="syncText">Not connected</span></div>
       <button class="btn green" id="exportBtn" style="display:none" onclick="exportCSV()">Export CSV</button>
       <button class="btn" onclick="logout()">Sign out</button>
     </div>
   </div>
 
-  <!-- ADMIN -->
   <div id="adminView" style="display:none">
     <div class="stats" id="adminStats"></div>
-
     <div class="card">
-      <div class="card-head">
-        <span class="card-title">POC progress today</span>
-        <span id="lastSync" style="font-size:11px;color:#bbb"></span>
-      </div>
+      <div class="card-head"><span class="card-title">POC progress today</span><span id="lastSync" style="font-size:11px;color:#bbb"></span></div>
       <div class="poc-grid" id="pocGrid"></div>
     </div>
-
     <div class="card">
-      <div class="card-head">
-        <span class="card-title">Upload absent riders CSV</span>
-        <button class="btn" onclick="document.getElementById('csvFile').click()">Choose file</button>
-        <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="loadCSV(event)">
-      </div>
+      <div class="card-head"><span class="card-title">Upload absent riders CSV</span><button class="btn" onclick="document.getElementById('csvFile').click()">Choose file</button><input type="file" id="csvFile" accept=".csv" style="display:none" onchange="loadCSV(event)"></div>
       <div style="padding:14px 16px">
         <label class="upload-zone" for="csvFile">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="margin:0 auto 8px;display:block">
-            <path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="#0078d4" stroke-width="2" stroke-linecap="round"/>
-            <rect x="3" y="3" width="18" height="18" rx="3" stroke="#0078d4" stroke-width="1.5"/>
-          </svg>
-          <p><strong>Click to upload your daily CSV</strong><br>
-          Columns: Date, ProjectType, Type2, POCName, PassportHRMSID, Mob, LicenseNo, NewLMSLogin, SpecialDay, ShiftTiming, PlannedHrs, AchievedHrs, TotalShiftCount, NoShowShift, Orders, ClientAttendance<br>
-          <span style="font-size:11px;color:#aaa">Column names flexible — partial matches work. Rows are added without removing old data.</span></p>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="margin:0 auto 8px;display:block"><path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="#0078d4" stroke-width="2" stroke-linecap="round"/><rect x="3" y="3" width="18" height="18" rx="3" stroke="#0078d4" stroke-width="1.5"/></svg>
+          <p><strong>Click to upload your daily CSV</strong><br>Columns: Date, Project, Type, POC, Rider name, Passport, Mob, Client Attendance</p>
         </label>
       </div>
     </div>
-
     <div class="card">
-      <div class="card-head">
-        <span class="card-title">All riders</span>
-        <button class="btn red" onclick="clearAll()">Clear all</button>
-      </div>
+      <div class="card-head"><span class="card-title">All riders</span><button class="btn red" onclick="clearAll()">Clear all</button></div>
       <div class="filter-bar">
-        <input type="text" id="aSearch" placeholder="Search name, ID, mobile..." oninput="renderAdmin()" style="min-width:180px">
+        <input type="text" id="aSearch" placeholder="Search name, passport, mobile..." oninput="renderAdmin()" style="min-width:180px">
         <select id="aPoc" onchange="renderAdmin()"><option value="">All POCs</option></select>
-        <select id="aCode" onchange="renderAdmin()">
-          <option value="">All codes</option>
-          <option>Present</option><option>Absent</option><option>Vacation</option><option>Week Off</option>
-        </select>
-        <select id="aStatus" onchange="renderAdmin()">
-          <option value="">All status</option><option value="done">Done</option><option value="pending">Pending</option>
-        </select>
+        <select id="aCode" onchange="renderAdmin()"><option value="">All codes</option><option>Present</option><option>Absent</option><option>Vacation</option><option>Week Off</option></select>
+        <select id="aStatus" onchange="renderAdmin()"><option value="">All status</option><option value="done">Done</option><option value="pending">Pending</option></select>
         <input type="date" id="aDate" onchange="renderAdmin()">
         <button class="btn" onclick="clearAF()">Clear</button>
       </div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>#</th><th>Date</th><th>POC</th><th>Project type</th>
-            <th>HRMS / Passport</th><th>Mobile</th><th>Shift</th>
-            <th>Planned</th><th>Achieved</th><th>Orders</th><th>Client</th>
+            <th>#</th><th>Rider Name</th><th>Date</th><th>Project</th><th>Type</th><th>POC</th><th>Passport</th><th>Mobile</th><th>Client</th>
             <th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th>
             <th>Updated by</th><th>Status</th><th>Save</th><th>Del</th>
           </tr></thead>
@@ -280,495 +160,68 @@ tr:hover td{background:#fafbff}
     </div>
   </div>
 
-  <!-- POC VIEW -->
   <div id="pocView" style="display:none">
     <div class="stats" id="pocStats"></div>
     <div class="card">
-      <div class="card-head"><span class="card-title">Your assigned riders — select code, subcode &amp; add remarks</span></div>
+      <div class="card-head"><span class="card-title">Your assigned riders</span></div>
       <div class="poc-notice" id="pocNotice"></div>
       <div class="filter-bar">
-        <input type="text" id="pSearch" placeholder="Search HRMS, mobile..." oninput="renderPoc()" style="min-width:180px">
-        <select id="pStatus" onchange="renderPoc()">
-          <option value="">All</option><option value="done">Done</option><option value="pending">Pending</option>
-        </select>
+        <input type="text" id="pSearch" placeholder="Search name, passport, mobile..." oninput="renderPoc()" style="min-width:180px">
+        <select id="pStatus" onchange="renderPoc()"><option value="">All</option><option value="done">Done</option><option value="pending">Pending</option></select>
         <button class="btn" onclick="document.getElementById('pSearch').value='';document.getElementById('pStatus').value='';renderPoc()">Clear</button>
       </div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>#</th><th>Date</th><th>Project type</th>
-            <th>HRMS / Passport</th><th>Mobile</th><th>Shift</th>
-            <th>Planned</th><th>Achieved</th><th>Orders</th><th>Client</th>
+            <th>#</th><th>Rider Name</th><th>Date</th><th>Project</th><th>Type</th><th>POC</th><th>Passport</th><th>Mobile</th><th>Client</th>
             <th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th>
             <th>Status</th><th>Save</th>
           </tr></thead>
           <tbody id="pocTable"></tbody>
         </table>
-        <div id="pocEmpty" class="empty-state">No riders assigned to you yet. Ask your admin to upload today's CSV.</div>
+        <div id="pocEmpty" class="empty-state">No riders assigned to you yet.</div>
       </div>
     </div>
   </div>
-
 </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
-// ── Code / Subcode Map ────────────────────────────────────────
-const CODE_MAP = {
-  'Present':  ['On Duty'],
-  'Absent':   ['Absconding','Accident','Bike Issue','Cancelled','COD Issue','Cycle Issue','Defaulter','Family Issue','Financial Issue','Fuel Issue','Left','Health Issue','ID Blocked','Late Login','Moved to Another Project','Not Responding','Resigned','Salary Advance Issue','Shift Issue','Terminated','Weather Issue','Zone Issue','Others'],
-  'Vacation': ['Vacation'],
-  'Week Off': ['Weekoff']
-};
-const CODES = Object.keys(CODE_MAP);
-
-// ── Code / Subcode Map ────────────────────────────────────────
-
-function codeDD(id, val){
-  return '<select class="mini-input" id="c_'+id+'" onchange="onCodeChange(''+id+'')" style="width:110px;cursor:pointer">'
-    +'<option value="">— Code —</option>'
-    +CODES.map(c=>'<option value="'+c+'"'+(c===val?' selected':'')+'>'+c+'</option>').join('')
-    +'</select>';
-}
-function subDD(id, code, val){
-  const subs = code && CODE_MAP[code] ? CODE_MAP[code] : [];
-  return '<select class="mini-input" id="s_'+id+'" style="width:160px;cursor:pointer">'
-    +'<option value="">— Subcode —</option>'
-    +subs.map(s=>'<option value="'+s+'"'+(s===val?' selected':'')+'>'+s+'</option>').join('')
-    +'</select>';
-}
-function onCodeChange(id){
-  const code = document.getElementById('c_'+id).value;
-  const subs = code && CODE_MAP[code] ? CODE_MAP[code] : [];
-  const el = document.getElementById('s_'+id);
-  if(!el) return;
-  el.innerHTML = '<option value="">— Subcode —</option>'+subs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
-  if(subs.length===1) el.value = subs[0];
-}
-
-// ── State ─────────────────────────────────────────────────────
-let riders = JSON.parse(localStorage.getItem('crm_final') || '[]');
-let currentUser = null, currentRole = null;
-let msalApp = null, accessToken = null, driveItemId = null;
-
-function localSave(){ try{ localStorage.setItem('crm_final', JSON.stringify(riders)); }catch(e){} }
-
-async function saveToGitHub(){
-  const apiBase = 'https://api.github.com/repos/'+CRM_CONFIG.ghRepo+'/contents/'+CRM_CONFIG.ghFile;
-  const headers = {'Authorization':'token '+CRM_CONFIG.ghToken,'Content-Type':'application/json'};
-  let sha = null;
-  try{ const r=await fetch(apiBase,{headers}); if(r.ok){const d=await r.json();sha=d.sha;} }catch(e){}
-  const body = {message:'CRM update by '+currentUser, content:btoa(unescape(encodeURIComponent(JSON.stringify(riders)))), ...(sha?{sha}:{})};
-  const r2 = await fetch(apiBase,{method:'PUT',headers,body:JSON.stringify(body)});
-  if(!r2.ok) throw new Error('GitHub save failed: '+r2.status);
-}
-
-async function loadFromGitHub(){
-  const url = 'https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();
-  const r = await fetch(url);
-  if(r.ok){
-    const text = await r.text();
-    if(text && text.trim().startsWith('[')){ riders=JSON.parse(text); localSave(); return true; }
-  }
-  return false;
-}
-function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-function ini(n){ return (n||'?').split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2); }
-
-function toast(msg, dur){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), dur||2500);
-}
-function setSyncStatus(state, text){
-  document.getElementById('syncDot').className='sync-dot '+(state||'');
-  document.getElementById('syncText').textContent=text;
-}
-function setLastSync(){
-  const el=document.getElementById('lastSync');
-  if(el) el.textContent='Last sync: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-}
-
-// ── MSAL OneDrive ─────────────────────────────────────────────
-function initMsal(){
-  if(CRM_CONFIG.clientId==='8a033239-ba9e-4731-908b-2d25da6975ad'){
-    document.getElementById('setupBanner').style.display='block';
-    setSyncStatus('err','Not configured — saving locally');
-    return;
-  }
-  try{
-    msalApp = new msal.PublicClientApplication({
-      auth:{
-        clientId: CRM_CONFIG.clientId,
-        authority: 'https://login.microsoftonline.com/common',
-        redirectUri: "https://deliveries1885-web.github.io/absence-crm"
-      },
-      cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true }
-    });
-    msalApp.initialize().then(()=>{
-      msalApp.handleRedirectPromise().then(resp=>{
-        if(resp && resp.accessToken){ accessToken=resp.accessToken; onConnected(); return; }
-        const accounts=msalApp.getAllAccounts();
-        if(accounts.length>0){
-          msalApp.acquireTokenSilent({ account:accounts[0], scopes:['Files.ReadWrite'] })
-            .then(r=>{ accessToken=r.accessToken; onConnected(); })
-            .catch(()=>setSyncStatus('','Click to connect OneDrive'));
-        } else {
-          setSyncStatus('','Click to connect OneDrive');
-        }
-      }).catch(()=>setSyncStatus('','Click to connect OneDrive'));
-    });
-  } catch(e){ setSyncStatus('err','MSAL error'); }
-}
-
-async function connectOneDrive(){
-  if(!msalApp){ toast('Client ID not configured yet.'); return; }
-  if(accessToken){ toast('Already connected!'); return; }
-  setSyncStatus('spin','Connecting...');
-  try{
-    const r = await msalApp.acquireTokenPopup({ scopes:['Files.ReadWrite'] });
-    accessToken = r.accessToken;
-    await onConnected();
-  } catch(e){
-    setSyncStatus('err','Sign-in failed — saving locally');
-    toast('OneDrive sign-in failed. Data saved locally.');
-  }
-}
-
-async function onConnected(){
-  setSyncStatus('spin','Loading from OneDrive...');
-  await loadFromOneDrive();
-  setSyncStatus('ok','Connected to OneDrive');
-  if(currentRole==='admin') renderAdmin(); else renderPoc();
-}
-
-async function apiCall(method, path, body, isBlob){
-  const opts = {
-    method,
-    headers:{ 'Authorization':'Bearer '+accessToken }
-  };
-  if(body && typeof body === 'string'){
-    opts.headers['Content-Type']='application/json';
-    opts.body=body;
-  } else if(body){
-    opts.body=body;
-  }
-  const r = await fetch('https://graph.microsoft.com/v1.0'+path, opts);
-  if(!r.ok){ const err=await r.text(); throw new Error(err); }
-  if(r.status===204) return null;
-  if(isBlob) return r.text();
-  return r.json();
-}
-
-async function getOrCreateFile(){
-  if(driveItemId) return driveItemId;
-  try{
-    const r = await apiCall('GET', `/me/drive/root:/${CRM_CONFIG.fileName}`);
-    driveItemId = r.id; return driveItemId;
-  } catch(e){
-    // Create empty file
-    const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${CRM_CONFIG.fileName}:/content`,{
-      method:'PUT',
-      headers:{ 'Authorization':'Bearer '+accessToken, 'Content-Type':'application/json' },
-      body: '[]'
-    });
-    const data = await r.json();
-    driveItemId = data.id; return driveItemId;
-  }
-}
-
-async function saveToOneDrive(){
-  localSave();
-  if(!accessToken){ return; }
-  setSyncStatus('spin','Saving...');
-  try{
-    const itemId = await getOrCreateFile();
-    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/content`,{
-      method:'PUT',
-      headers:{ 'Authorization':'Bearer '+accessToken, 'Content-Type':'application/json' },
-      body: JSON.stringify(riders)
-    });
-    setSyncStatus('ok','Saved to OneDrive');
-    setLastSync();
-  } catch(e){
-    setSyncStatus('err','Save failed — saved locally');
-    console.error(e);
-  }
-}
-
-async function loadFromOneDrive(){
-  if(!accessToken){ riders=JSON.parse(localStorage.getItem('crm_final')||'[]'); return; }
-  try{
-    const itemId = await getOrCreateFile();
-    const r = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/content`,{
-      headers:{ 'Authorization':'Bearer '+accessToken }
-    });
-    const text = await r.text();
-    riders = text ? JSON.parse(text) : [];
-    localSave();
-    setSyncStatus('ok','Connected to OneDrive');
-    setLastSync();
-  } catch(e){
-    riders = JSON.parse(localStorage.getItem('crm_final')||'[]');
-    setSyncStatus('err','Load failed — using local data');
-  }
-}
-
-// ── Login ─────────────────────────────────────────────────────
-function doLogin(){
-  const name=document.getElementById('loginName').value.trim();
-  const role=document.getElementById('loginRole').value;
-  const pin=document.getElementById('adminPin').value;
-  if(!name){ alert('Enter your name.'); return; }
-  if(role==='admin' && pin!==CRM_CONFIG.adminPin){ alert('Wrong PIN.'); return; }
-  currentUser=name; currentRole=role;
-  document.getElementById('loginOuter').style.display='none';
-  document.getElementById('mainApp').style.display='block';
-  const pill=document.getElementById('topPill');
-  if(role==='admin'){ pill.textContent='Admin'; pill.className='pill blue'; document.getElementById('exportBtn').style.display='inline-block'; document.getElementById('adminView').style.display='block'; }
-  else { pill.textContent=name; pill.className='pill green'; document.getElementById('pocView').style.display='block'; }
-  riders = JSON.parse(localStorage.getItem('crm_final')||'[]');
-  if(role==='admin'){
-    renderAdmin();
-    initMsal();
-  } else {
-    // POC - load from GitHub directly, no Microsoft login needed
-    renderPoc();
-    setSyncStatus('spin','Loading data...');
-    loadFromGitHub().then(ok=>{
-      if(ok){ setSyncStatus('ok','Data loaded'); renderPoc(); }
-      else { setSyncStatus('','Using local data'); }
-    }).catch(()=>setSyncStatus('','Using local data'));
-  }
-}
-
-function logout(){
-  currentUser=null; currentRole=null; accessToken=null; driveItemId=null;
-  document.getElementById('mainApp').style.display='none';
-  document.getElementById('loginOuter').style.display='flex';
-  document.getElementById('adminView').style.display='none';
-  document.getElementById('pocView').style.display='none';
-  document.getElementById('exportBtn').style.display='none';
-  document.getElementById('loginName').value='';
-  document.getElementById('adminPin').value='';
-  document.getElementById('loginRole').value='poc';
-  document.getElementById('pinRow').style.display='none';
-}
-
-// ── CSV Upload ────────────────────────────────────────────────
-function fc(h,kws){ for(const kw of kws){ const i=h.findIndex(x=>x.toLowerCase().replace(/[\s_]/g,'').includes(kw.toLowerCase())); if(i>=0)return i; } return -1; }
-function gv(cols,i){ return i>=0&&cols[i] ? cols[i].trim().replace(/^"|"$/g,'') : ''; }
-
-function loadCSV(e){
-  const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=async function(ev){
-    const lines=ev.target.result.split('\n').filter(l=>l.trim());
-    if(lines.length<2){ alert('CSV is empty.'); return; }
-    const h=lines[0].split(',').map(x=>x.trim().replace(/^"|"$/g,''));
-    const ci={
-      date:fc(h,['date']), projtype:fc(h,['projecttype','project']), type2:fc(h,['type2']),
-      poc:fc(h,['pocname','poc']), hrms:fc(h,['passporthrms','hrmsid','hrms','passport']),
-      mob:fc(h,['mob','mobile']), license:fc(h,['licenseno','license']),
-      lms:fc(h,['newlms','lms']), special:fc(h,['specialday','special']),
-      shift:fc(h,['shifttiming','shift']), planned:fc(h,['plannedhrs','planned']),
-      achieved:fc(h,['achievedhrs','achieved']), shiftcount:fc(h,['totalshift','shiftcount']),
-      noshow:fc(h,['noshow']), orders:fc(h,['orders']), client:fc(h,['clientattendance','client'])
-    };
-    let added=0;
-    lines.slice(1).forEach(line=>{
-      if(!line.trim()) return;
-      const cols=line.split(',');
-      riders.push({ _id:uid(), date:gv(cols,ci.date)||new Date().toISOString().slice(0,10),
-        projtype:gv(cols,ci.projtype), type2:gv(cols,ci.type2), poc:gv(cols,ci.poc)||gv(cols,0),
-        hrms:gv(cols,ci.hrms), mob:gv(cols,ci.mob), license:gv(cols,ci.license),
-        lms:gv(cols,ci.lms), special:gv(cols,ci.special), shift:gv(cols,ci.shift),
-        planned:gv(cols,ci.planned), achieved:gv(cols,ci.achieved),
-        shiftcount:gv(cols,ci.shiftcount), noshow:gv(cols,ci.noshow),
-        orders:gv(cols,ci.orders), client:gv(cols,ci.client),
-        code:'', subcode:'', remarks:'', updatedBy:'', updatedAt:'', status:'pending'
-      });
-      added++;
-    });
-    await saveToOneDrive();
-    renderAdmin();
-    toast(added+' riders loaded!');
-    e.target.value='';
-  };
-  reader.readAsText(file);
-}
-
-// ── Dropdowns ─────────────────────────────────────────────────
-function renderStats(el, list){
-  const total=list.length, done=list.filter(r=>r.status==='done').length, pend=total-done, pct=total?Math.round(done/total*100):0;
-  document.getElementById(el).innerHTML=`
-    <div class="stat"><div class="stat-label">Total riders</div><div class="stat-value">${total}</div></div>
-    <div class="stat"><div class="stat-label">Updated</div><div class="stat-value" style="color:#107c10">${done}</div></div>
-    <div class="stat"><div class="stat-label">Pending</div><div class="stat-value" style="color:#835c00">${pend}</div></div>
-    <div class="stat"><div class="stat-label">Completion</div><div class="stat-value" style="color:#0078d4">${pct}%</div></div>`;
-}
-
-// ── POC Grid ──────────────────────────────────────────────────
-function renderPocGrid(){
-  const pocs=[...new Set(riders.map(r=>r.poc).filter(Boolean))].sort();
-  const el=document.getElementById('pocGrid');
-  if(!pocs.length){ el.innerHTML='<p style="font-size:12px;color:#bbb;padding-bottom:12px">No riders loaded yet.</p>'; return; }
-  el.innerHTML=pocs.map(poc=>{
-    const my=riders.filter(r=>r.poc===poc);
-    const done=my.filter(r=>r.status==='done').length, total=my.length;
-    const pct=total?Math.round(done/total*100):0;
-    const col=pct===100?'#107c10':pct>=50?'#0078d4':'#835c00';
-    return `<div class="poc-card">
-      <div class="poc-name"><span class="ini g">${ini(poc)}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${poc}</span></div>
-      <div style="font-size:11px;font-weight:700;color:${col}">${done}/${total} &bull; ${pct}%</div>
-      <div class="poc-bar"><div class="poc-fill" style="width:${pct}%;background:${col}"></div></div>
-    </div>`;
-  }).join('');
-}
-
-// ── Admin Render ──────────────────────────────────────────────
-function clearAF(){ ['aSearch','aPoc','aCode','aStatus','aDate'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); renderAdmin(); }
-
-function renderAdmin(){
-  renderStats('adminStats', riders);
-  renderPocGrid();
-  const q=document.getElementById('aSearch').value.toLowerCase();
-  const poc=document.getElementById('aPoc').value;
-  const code=document.getElementById('aCode').value;
-  const st=document.getElementById('aStatus').value;
-  const dt=document.getElementById('aDate').value;
-  let list=riders;
-  if(poc) list=list.filter(r=>r.poc===poc);
-  if(code) list=list.filter(r=>r.code===code);
-  if(st) list=list.filter(r=>r.status===st);
-  if(dt) list=list.filter(r=>r.date===dt);
-  if(q) list=list.filter(r=>(r.poc+r.hrms+r.mob).toLowerCase().includes(q));
-  const pocs=[...new Set(riders.map(r=>r.poc).filter(Boolean))].sort();
-  const pf=document.getElementById('aPoc'), cp=pf.value;
-  pf.innerHTML='<option value="">All POCs</option>'+pocs.map(p=>`<option value="${p}"${p===cp?' selected':''}>${p}</option>`).join('');
-  const tbody=document.getElementById('adminTable'), empty=document.getElementById('adminEmpty');
-  if(!list.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  tbody.innerHTML=list.map((r,i)=>`<tr>
-    <td style="color:#bbb;font-size:10px">${i+1}</td>
-    <td>${r.date}</td>
-    <td><span class="ini g">${ini(r.poc)}</span>${r.poc||'—'}</td>
-    <td>${r.projtype||'—'}</td>
-    <td style="font-family:Consolas,monospace;font-size:11px">${r.hrms||'—'}</td>
-    <td>${r.mob||'—'}</td>
-    <td>${r.shift||'—'}</td>
-    <td>${r.planned||'—'}</td>
-    <td>${r.achieved||'—'}</td>
-    <td>${r.orders||'—'}</td>
-    <td>${r.client||'—'}</td>
-    <td style="background:rgba(220,255,220,.35)">${codeDD(r._id,r.code)}</td>
-    <td style="background:rgba(220,255,220,.35)">${subDD(r._id,r.code,r.subcode)}</td>
-    <td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_${r._id}" value="${r.remarks}" placeholder="Remarks..."></td>
-    <td style="font-size:11px;color:#999">${r.updatedBy?'<span class="ini" style="width:19px;height:19px;font-size:8px">'+ini(r.updatedBy)+'</span>'+r.updatedBy:'—'}</td>
-    <td><span class="badge ${r.status==='done'?'done':'pending'}">${r.status==='done'?'Done':'Pending'}</span></td>
-    <td><button class="save-btn" onclick="saveRow('${r._id}')">Save</button></td>
-    <td><button class="del-btn" onclick="delRow('${r._id}')">Del</button></td>
-  </tr>`).join('');
-}
-
-// ── POC Render ────────────────────────────────────────────────
-function renderPoc(){
-  const myRiders=riders.filter(r=>r.poc&&r.poc.toLowerCase().trim()===currentUser.toLowerCase().trim());
-  renderStats('pocStats', myRiders);
-  const done=myRiders.filter(r=>r.status==='done').length;
-  document.getElementById('pocNotice').innerHTML=`Riders assigned to <strong>${currentUser}</strong> &nbsp;|&nbsp; ${done} of ${myRiders.length} updated`;
-  const q=document.getElementById('pSearch').value.toLowerCase();
-  const st=document.getElementById('pStatus').value;
-  let list=myRiders;
-  if(st) list=list.filter(r=>r.status===st);
-  if(q) list=list.filter(r=>(r.hrms+r.mob).toLowerCase().includes(q));
-  const tbody=document.getElementById('pocTable'), empty=document.getElementById('pocEmpty');
-  if(!myRiders.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  if(!list.length){ tbody.innerHTML='<tr><td colspan="15" style="text-align:center;padding:2rem;color:#ccc;font-size:12px">No riders match your filter.</td></tr>'; return; }
-  tbody.innerHTML=list.map((r,i)=>`<tr>
-    <td style="color:#bbb;font-size:10px">${i+1}</td>
-    <td>${r.date}</td>
-    <td>${r.projtype||'—'}</td>
-    <td style="font-family:Consolas,monospace;font-size:11px">${r.hrms||'—'}</td>
-    <td>${r.mob||'—'}</td>
-    <td>${r.shift||'—'}</td>
-    <td>${r.planned||'—'}</td>
-    <td>${r.achieved||'—'}</td>
-    <td>${r.orders||'—'}</td>
-    <td>${r.client||'—'}</td>
-    <td style="background:rgba(220,255,220,.35)">${codeDD(r._id,r.code)}</td>
-    <td style="background:rgba(220,255,220,.35)">${subDD(r._id,r.code,r.subcode)}</td>
-    <td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_${r._id}" value="${r.remarks}" placeholder="Remarks..."></td>
-    <td><span class="badge ${r.status==='done'?'done':'pending'}">${r.status==='done'?'Done':'Pending'}</span></td>
-    <td><button class="save-btn" onclick="saveRow('${r._id}')">Save</button></td>
-  </tr>`).join('');
-}
-
-// ── Export CSV ────────────────────────────────────────────────
-
-async function saveRow(id){
-  const r=riders.find(x=>x._id===id); if(!r) return;
-  const code=(document.getElementById('c_'+id)||{}).value||'';
-  const sub=(document.getElementById('s_'+id)||{}).value||'';
-  if(!code){ toast('Please select a Code.'); return; }
-  if(CODE_MAP[code]&&CODE_MAP[code].length>0&&!sub){ toast('Please select a Subcode.'); return; }
-  r.code=code; r.subcode=sub;
-  r.remarks=(document.getElementById('rem_'+id)||{}).value||'';
-  r.updatedBy=currentUser;
-  r.updatedAt=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  r.status='done';
-  if(currentRole==='poc'){
-    localSave();
-    setSyncStatus('spin','Saving...');
-    try{ await saveToGitHub(); setSyncStatus('ok','Saved!'); setLastSync(); }
-    catch(e){ setSyncStatus('err','Save failed'); console.error(e); }
-    renderPoc();
-  } else {
-    await saveToOneDrive();
-    renderAdmin();
-  }
-  toast('Saved!');
-}
-
-async function delRow(id){
-  if(!confirm('Remove this rider?')) return;
-  riders=riders.filter(x=>x._id!==id);
-  await saveToOneDrive(); renderAdmin();
-}
-
-async function clearAll(){
-  if(!confirm('Delete ALL rider data?')) return;
-  riders=[];
-  await saveToOneDrive(); renderAdmin();
-}
-function exportCSV(){
-  const fields=['date','projtype','type2','poc','hrms','mob','license','lms','special','shift','planned','achieved','shiftcount','noshow','orders','client','code','subcode','remarks','updatedBy','updatedAt','status'];
-  const labels=['Date','ProjectType','Type2','POCName','PassportHRMSID','Mob','LicenseNo','NewLMSLogin','SpecialDay','ShiftTiming','PlannedHrs','AchievedHrs','TotalShiftCount','NoShowShift','Orders','ClientAttendance','Code','Subcode','Remarks','UpdatedBy','UpdatedAt','Status'];
-  const rows=riders.map(r=>fields.map(f=>'"'+(String(r[f]||'').replace(/"/g,'""'))+'"').join(','));
-  const csv=[labels.join(','),...rows].join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='RiderAbsence_'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click();
-}
-
-function showSetupSteps(){
-  alert(
-    'SETUP STEPS — 10 minutes, no IT needed\n\n' +
-    '1. Go to portal.azure.com → sign in with your Office 365 account\n' +
-    '2. Search "App registrations" → click "+ New registration"\n' +
-    '3. Name: Rider CRM | Account types: Any Microsoft account\n' +
-    '4. Redirect URI: Web → paste the URL where you host this file\n' +
-    '5. Click Register → copy the "Application (client) ID"\n' +
-    '6. Open this HTML in Notepad → find 8a033239-ba9e-4731-908b-2d25da6975ad → replace with your ID\n' +
-    '7. Save → upload to OneDrive → share link with your team\n\n' +
-    'Data will save to a file called "RiderAbsenceCRM_Data.json" in your OneDrive root.\n' +
-    'You can open that file anytime to see all data.'
-  );
-}
+const CODE_MAP={'Present':['On Duty'],'Absent':['Absconding','Accident','Bike Issue','Cancelled','COD Issue','Cycle Issue','Defaulter','Family Issue','Financial Issue','Fuel Issue','Left','Health Issue','ID Blocked','Late Login','Moved to Another Project','Not Responding','Resigned','Salary Advance Issue','Shift Issue','Terminated','Weather Issue','Zone Issue','Others'],'Vacation':['Vacation'],'Week Off':['Weekoff']};
+const CODES=Object.keys(CODE_MAP);
+let riders=JSON.parse(localStorage.getItem('crm_final')||'[]');
+let currentUser=null,currentRole=null,msalApp=null,accessToken=null,driveItemId=null;
+function localSave(){try{localStorage.setItem('crm_final',JSON.stringify(riders));}catch(e){}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function ini(n){return(n||'?').split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);}
+function toast(msg,dur){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur||2500);}
+function setSyncStatus(state,text){document.getElementById('syncDot').className='sync-dot '+(state||'');document.getElementById('syncText').textContent=text;}
+function setLastSync(){const el=document.getElementById('lastSync');if(el)el.textContent='Last sync: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
+function codeDD(id,val){return '<select class="mini" id="c_'+id+'" onchange="onCodeChange(\''+id+'\')" style="width:110px"><option value="">- Code -</option>'+CODES.map(c=>'<option value="'+c+'"'+(c===val?' selected':'')+'>'+c+'</option>').join('')+'</select>';}
+function subDD(id,code,val){const subs=code&&CODE_MAP[code]?CODE_MAP[code]:[];return '<select class="mini" id="s_'+id+'" style="width:155px"><option value="">- Subcode -</option>'+subs.map(s=>'<option value="'+s+'"'+(s===val?' selected':'')+'>'+s+'</option>').join('')+'</select>';}
+function onCodeChange(id){const code=document.getElementById('c_'+id).value;const subs=code&&CODE_MAP[code]?CODE_MAP[code]:[];const el=document.getElementById('s_'+id);if(!el)return;el.innerHTML='<option value="">- Subcode -</option>'+subs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');if(subs.length===1)el.value=subs[0];}
+async function saveToGitHub(){const base='https://api.github.com/repos/'+CRM_CONFIG.ghRepo+'/contents/'+CRM_CONFIG.ghFile;const hdrs={'Authorization':'token '+CRM_CONFIG.ghToken,'Content-Type':'application/json'};let sha=null;try{const r=await fetch(base,{headers:hdrs});if(r.ok){const d=await r.json();sha=d.sha;}}catch(e){}const body={message:'update by '+currentUser,content:btoa(unescape(encodeURIComponent(JSON.stringify(riders)))),...(sha?{sha}:{})};const r2=await fetch(base,{method:'PUT',headers:hdrs,body:JSON.stringify(body)});if(!r2.ok)throw new Error('GitHub save failed '+r2.status);}
+async function loadFromGitHub(){try{const url='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();const r=await fetch(url);if(r.ok){const t=await r.text();if(t&&t.trim().startsWith('[')){riders=JSON.parse(t);localSave();return true;}}}catch(e){}return false;}
+function initMsal(){try{msalApp=new msal.PublicClientApplication({auth:{clientId:CRM_CONFIG.clientId,authority:'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',redirectUri:'https://deliveries1885-web.github.io/absence-crm'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});msalApp.handleRedirectPromise().then(resp=>{if(resp&&resp.accessToken){accessToken=resp.accessToken;onConnected();return;}const accts=msalApp.getAllAccounts();if(accts.length>0){msalApp.acquireTokenSilent({account:accts[0],scopes:['Files.ReadWrite']}).then(r=>{accessToken=r.accessToken;onConnected();}).catch(()=>setSyncStatus('','Click to connect OneDrive'));}else{setSyncStatus('','Click to connect OneDrive');}}).catch(()=>setSyncStatus('','Click to connect OneDrive'));}catch(e){setSyncStatus('err','MSAL error: '+e.message);}}
+async function connectOneDrive(){if(!msalApp){toast('Not initialized.');return;}if(accessToken){toast('Already connected!');return;}setSyncStatus('spin','Connecting...');try{const r=await msalApp.acquireTokenPopup({scopes:['Files.ReadWrite']});accessToken=r.accessToken;await onConnected();}catch(e){setSyncStatus('err','Sign-in failed');toast('OneDrive sign-in failed.');}}
+async function onConnected(){setSyncStatus('spin','Loading...');await loadFromOneDrive();setSyncStatus('ok','Connected to OneDrive');if(currentRole==='admin')renderAdmin();else renderPoc();}
+async function getOrCreateFile(){if(driveItemId)return driveItemId;try{const r=await fetch('https://graph.microsoft.com/v1.0/me/drive/root:/'+CRM_CONFIG.fileName,{headers:{'Authorization':'Bearer '+accessToken}});if(r.ok){const d=await r.json();driveItemId=d.id;return driveItemId;}}catch(e){}const r2=await fetch('https://graph.microsoft.com/v1.0/me/drive/root:/'+CRM_CONFIG.fileName+':/content',{method:'PUT',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:'[]'});const d2=await r2.json();driveItemId=d2.id;return driveItemId;}
+async function saveToOneDrive(){localSave();if(!accessToken)return;setSyncStatus('spin','Saving...');try{const id=await getOrCreateFile();await fetch('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/content',{method:'PUT',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(riders)});setSyncStatus('ok','Saved to OneDrive');setLastSync();try{await saveToGitHub();}catch(e){console.log('GitHub sync:',e.message);}}catch(e){setSyncStatus('err','Save failed');console.error(e);}}
+async function loadFromOneDrive(){if(!accessToken){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');return;}try{const id=await getOrCreateFile();const r=await fetch('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/content',{headers:{'Authorization':'Bearer '+accessToken}});const text=await r.text();riders=text?JSON.parse(text):[];localSave();setLastSync();}catch(e){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');}}
+function doLogin(){const name=document.getElementById('loginName').value.trim();const role=document.getElementById('loginRole').value;const pin=document.getElementById('adminPin').value;if(!name){alert('Enter your name.');return;}if(role==='admin'&&pin!==CRM_CONFIG.adminPin){alert('Wrong PIN.');return;}currentUser=name;currentRole=role;document.getElementById('loginOuter').style.display='none';document.getElementById('mainApp').style.display='block';const pill=document.getElementById('topPill');if(role==='admin'){pill.textContent='Admin';pill.className='pill blue';document.getElementById('exportBtn').style.display='inline-block';document.getElementById('adminView').style.display='block';}else{pill.textContent=name;pill.className='pill green';document.getElementById('pocView').style.display='block';}riders=JSON.parse(localStorage.getItem('crm_final')||'[]');if(role==='admin'){renderAdmin();initMsal();}else{renderPoc();setSyncStatus('spin','Loading data...');loadFromGitHub().then(ok=>{if(ok){setSyncStatus('ok','Data loaded');setLastSync();renderPoc();}else{setSyncStatus('','Using local data');}}).catch(()=>setSyncStatus('','Using local data'));}}
+function logout(){currentUser=null;currentRole=null;accessToken=null;driveItemId=null;document.getElementById('mainApp').style.display='none';document.getElementById('loginOuter').style.display='flex';document.getElementById('adminView').style.display='none';document.getElementById('pocView').style.display='none';document.getElementById('exportBtn').style.display='none';document.getElementById('loginName').value='';document.getElementById('adminPin').value='';document.getElementById('loginRole').value='poc';document.getElementById('pinRow').style.display='none';}
+function fc(h,kws){for(const kw of kws){const i=h.findIndex(x=>x.toLowerCase().replace(/[\s_]/g,'').includes(kw.toLowerCase()));if(i>=0)return i;}return -1;}
+function gv(cols,i){return i>=0&&cols[i]?cols[i].trim().replace(/^"|"$/g,''):''}
+function loadCSV(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async function(ev){const lines=ev.target.result.split('\n').filter(l=>l.trim());if(lines.length<2){alert('CSV is empty.');return;}const h=lines[0].split(',').map(x=>x.trim().replace(/^"|"$/g,''));const ci={date:fc(h,['date']),projtype:fc(h,['project','projecttype']),type:fc(h,['type']),poc:fc(h,['poc','pocname']),ridername:fc(h,['ridername','rider']),passport:fc(h,['passport']),mob:fc(h,['mob','mobile']),client:fc(h,['clientattendance','client'])};let added=0;lines.slice(1).forEach(line=>{if(!line.trim())return;const cols=line.split(',');riders.push({_id:uid(),date:gv(cols,ci.date)||new Date().toISOString().slice(0,10),projtype:gv(cols,ci.projtype),type:gv(cols,ci.type),poc:gv(cols,ci.poc)||gv(cols,0),ridername:gv(cols,ci.ridername),passport:gv(cols,ci.passport),mob:gv(cols,ci.mob),client:gv(cols,ci.client),code:'',subcode:'',remarks:'',updatedBy:'',updatedAt:'',status:'pending'});added++;});await saveToOneDrive();renderAdmin();toast(added+' riders loaded!');e.target.value='';};reader.readAsText(file);}
+function renderStats(el,list){const total=list.length,done=list.filter(r=>r.status==='done').length,pend=total-done,pct=total?Math.round(done/total*100):0;document.getElementById(el).innerHTML='<div class="stat"><div class="stat-label">Total riders</div><div class="stat-value">'+total+'</div></div><div class="stat"><div class="stat-label">Updated</div><div class="stat-value" style="color:#107c10">'+done+'</div></div><div class="stat"><div class="stat-label">Pending</div><div class="stat-value" style="color:#835c00">'+pend+'</div></div><div class="stat"><div class="stat-label">Completion</div><div class="stat-value" style="color:#0078d4">'+pct+'%</div></div>';}
+function renderPocGrid(){const pocs=[...new Set(riders.map(r=>r.poc).filter(Boolean))].sort();const el=document.getElementById('pocGrid');if(!pocs.length){el.innerHTML='<p style="font-size:12px;color:#bbb;padding-bottom:12px">No riders loaded yet.</p>';return;}el.innerHTML=pocs.map(poc=>{const my=riders.filter(r=>r.poc===poc);const done=my.filter(r=>r.status==='done').length,total=my.length,pct=total?Math.round(done/total*100):0;const col=pct===100?'#107c10':pct>=50?'#0078d4':'#835c00';return '<div class="poc-card"><div class="poc-name"><span class="ini g">'+ini(poc)+'</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+poc+'</span></div><div style="font-size:11px;font-weight:700;color:'+col+'">'+done+'/'+total+' - '+pct+'%</div><div class="poc-bar"><div class="poc-fill" style="width:'+pct+'%;background:'+col+'"></div></div></div>';}).join('');}
+function clearAF(){['aSearch','aPoc','aCode','aStatus','aDate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});renderAdmin();}
+function renderAdmin(){renderStats('adminStats',riders);renderPocGrid();const q=document.getElementById('aSearch').value.toLowerCase();const poc=document.getElementById('aPoc').value;const code=document.getElementById('aCode').value;const st=document.getElementById('aStatus').value;const dt=document.getElementById('aDate').value;let list=riders;if(poc)list=list.filter(r=>r.poc===poc);if(code)list=list.filter(r=>r.code===code);if(st)list=list.filter(r=>r.status===st);if(dt)list=list.filter(r=>r.date===dt);if(q)list=list.filter(r=>((r.ridername||'')+(r.poc||'')+(r.passport||'')+(r.mob||'')).toLowerCase().includes(q));const pocs=[...new Set(riders.map(r=>r.poc).filter(Boolean))].sort();const pf=document.getElementById('aPoc'),cp=pf.value;pf.innerHTML='<option value="">All POCs</option>'+pocs.map(p=>'<option value="'+p+'"'+(p===cp?' selected':'')+'>'+p+'</option>').join('');const tbody=document.getElementById('adminTable'),empty=document.getElementById('adminEmpty');if(!list.length){tbody.innerHTML='';empty.style.display='block';return;}empty.style.display='none';tbody.innerHTML=list.map((r,i)=>'<tr><td style="color:#bbb;font-size:10px">'+(i+1)+'</td><td style="font-weight:600">'+(r.ridername||'--')+'</td><td>'+(r.date||'--')+'</td><td>'+(r.projtype||'--')+'</td><td>'+(r.type||'--')+'</td><td><span class="ini g">'+ini(r.poc)+'</span>'+(r.poc||'--')+'</td><td style="font-family:Consolas,monospace;font-size:11px">'+(r.passport||'--')+'</td><td>'+(r.mob||'--')+'</td><td>'+(r.client||'--')+'</td><td style="background:rgba(220,255,220,.35)">'+codeDD(r._id,r.code)+'</td><td style="background:rgba(220,255,220,.35)">'+subDD(r._id,r.code,r.subcode)+'</td><td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_'+r._id+'" value="'+(r.remarks||'')+'" placeholder="Remarks..." style="width:150px"></td><td style="font-size:11px;color:#999">'+(r.updatedBy?'<span class="ini" style="width:19px;height:19px;font-size:8px">'+ini(r.updatedBy)+'</span>'+r.updatedBy:'--')+'</td><td><span class="badge '+(r.status==='done'?'done':'pending')+'">'+(r.status==='done'?'Done':'Pending')+'</span></td><td><button class="save-btn" onclick="saveRow(\''+r._id+'\')">Save</button></td><td><button class="del-btn" onclick="delRow(\''+r._id+'\')">Del</button></td></tr>').join('');}
+function renderPoc(){const myRiders=riders.filter(r=>r.poc&&r.poc.toLowerCase().trim()===currentUser.toLowerCase().trim());renderStats('pocStats',myRiders);const done=myRiders.filter(r=>r.status==='done').length;const pn=document.getElementById('pocNotice');if(pn)pn.innerHTML='Riders assigned to <strong>'+currentUser+'</strong> | '+done+' of '+myRiders.length+' updated';const q=document.getElementById('pSearch').value.toLowerCase();const st=document.getElementById('pStatus').value;let list=myRiders;if(st)list=list.filter(r=>r.status===st);if(q)list=list.filter(r=>((r.ridername||'')+(r.passport||'')+(r.mob||'')).toLowerCase().includes(q));const tbody=document.getElementById('pocTable'),empty=document.getElementById('pocEmpty');if(!tbody)return;if(!myRiders.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}if(empty)empty.style.display='none';if(!list.length){tbody.innerHTML='<tr><td colspan="14" style="text-align:center;padding:2rem;color:#ccc;font-size:12px">No riders match filter.</td></tr>';return;}tbody.innerHTML=list.map((r,i)=>'<tr><td style="color:#bbb;font-size:10px">'+(i+1)+'</td><td style="font-weight:600">'+(r.ridername||'--')+'</td><td>'+(r.date||'--')+'</td><td>'+(r.projtype||'--')+'</td><td>'+(r.type||'--')+'</td><td>'+(r.poc||'--')+'</td><td style="font-family:Consolas,monospace;font-size:11px">'+(r.passport||'--')+'</td><td>'+(r.mob||'--')+'</td><td>'+(r.client||'--')+'</td><td style="background:rgba(220,255,220,.35)">'+codeDD(r._id,r.code)+'</td><td style="background:rgba(220,255,220,.35)">'+subDD(r._id,r.code,r.subcode)+'</td><td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_'+r._id+'" value="'+(r.remarks||'')+'" placeholder="Remarks..." style="width:150px"></td><td><span class="badge '+(r.status==='done'?'done':'pending')+'">'+(r.status==='done'?'Done':'Pending')+'</span></td><td><button class="save-btn" onclick="saveRow(\''+r._id+'\')">Save</button></td></tr>').join('');}
+async function saveRow(id){const r=riders.find(x=>x._id===id);if(!r)return;const code=(document.getElementById('c_'+id)||{}).value||'';const sub=(document.getElementById('s_'+id)||{}).value||'';if(!code){toast('Please select a Code.');return;}if(CODE_MAP[code]&&CODE_MAP[code].length>0&&!sub){toast('Please select a Subcode.');return;}r.code=code;r.subcode=sub;r.remarks=(document.getElementById('rem_'+id)||{}).value||'';r.updatedBy=currentUser;r.updatedAt=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});r.status='done';if(currentRole==='poc'){localSave();setSyncStatus('spin','Saving...');try{await saveToGitHub();setSyncStatus('ok','Saved!');setLastSync();}catch(e){setSyncStatus('err','Save failed');console.error(e);}renderPoc();}else{await saveToOneDrive();renderAdmin();}toast('Saved!');}
+async function delRow(id){if(!confirm('Remove this rider?'))return;riders=riders.filter(x=>x._id!==id);await saveToOneDrive();renderAdmin();}
+async function clearAll(){if(!confirm('Delete ALL rider data?'))return;riders=[];await saveToOneDrive();try{await saveToGitHub();}catch(e){}renderAdmin();}
+function exportCSV(){const fields=['date','projtype','type','poc','ridername','passport','mob','client','code','subcode','remarks','updatedBy','updatedAt','status'];const labels=['Date','Project','Type','POC','RiderName','Passport','Mobile','ClientAttendance','Code','Subcode','Remarks','UpdatedBy','UpdatedAt','Status'];const rows=riders.map(r=>fields.map(f=>'"'+(String(r[f]||'').replace(/"/g,'""'))+'"').join(','));const csv=[labels.join(','),...rows].join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='AbsenceCRM_'+new Date().toISOString().slice(0,10)+'.csv';a.click();}
 </script>
 </body>
 </html>
