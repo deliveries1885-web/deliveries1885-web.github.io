@@ -281,8 +281,74 @@ async function loadFromOneDrive(){
     localSave();setLastSync();
   }catch(e){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');}
 }
-function doLogin(){const name=document.getElementById('loginName').value.trim();const role=document.getElementById('loginRole').value;const pin=document.getElementById('adminPin').value;if(!name){alert('Enter your name.');return;}if(role==='admin'&&pin!==CRM_CONFIG.adminPin){alert('Wrong PIN.');return;}currentUser=name;currentRole=role;document.getElementById('loginOuter').style.display='none';document.getElementById('mainApp').style.display='block';const pill=document.getElementById('topPill');if(role==='admin'){pill.textContent='Admin';pill.className='pill blue';document.getElementById('exportBtn').style.display='inline-block';document.getElementById('refreshGhBtn').style.display='inline-block';document.getElementById('adminView').style.display='block';}else{pill.textContent=name;pill.className='pill green';document.getElementById('pocView').style.display='block';}riders=JSON.parse(localStorage.getItem('crm_final')||'[]');if(role==='admin'){renderAdmin();initMsal();}else{renderPoc();setSyncStatus('spin','Loading data...');loadFromGitHub().then(ok=>{if(ok){setSyncStatus('ok','Data loaded');setLastSync();renderPoc();}else{setSyncStatus('','Using local data');}}).catch(()=>setSyncStatus('','Using local data'));}}
-function logout(){currentUser=null;currentRole=null;accessToken=null;driveItemId=null;document.getElementById('mainApp').style.display='none';document.getElementById('loginOuter').style.display='flex';document.getElementById('adminView').style.display='none';document.getElementById('pocView').style.display='none';document.getElementById('exportBtn').style.display='none';document.getElementById('loginName').value='';document.getElementById('adminPin').value='';document.getElementById('loginRole').value='poc';document.getElementById('pinRow').style.display='none';}
+function doLogin(){const name=document.getElementById('loginName').value.trim();const role=document.getElementById('loginRole').value;const pin=document.getElementById('adminPin').value;if(!name){alert('Enter your name.');return;}if(role==='admin'&&pin!==CRM_CONFIG.adminPin){alert('Wrong PIN.');return;}currentUser=name;currentRole=role;document.getElementById('loginOuter').style.display='none';document.getElementById('mainApp').style.display='block';const pill=document.getElementById('topPill');if(role==='admin'){pill.textContent='Admin';pill.className='pill blue';document.getElementById('exportBtn').style.display='inline-block';document.getElementById('refreshGhBtn').style.display='inline-block';document.getElementById('adminView').style.display='block';}else{pill.textContent=name;pill.className='pill green';document.getElementById('pocView').style.display='block';}riders=JSON.parse(localStorage.getItem('crm_final')||'[]');if(role==='admin'){
+    renderAdmin();
+    initMsal();
+    // Auto-pull POC updates every 90 seconds
+    setInterval(async()=>{
+      if(currentRole==='admin'){
+        try{
+          const url='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();
+          const r=await fetch(url);
+          if(r.ok){
+            const text=await r.text();
+            if(text&&text.trim().startsWith('[')){
+              const ghData=JSON.parse(text);
+              if(ghData.length>0){
+                const ghMap={};
+                ghData.forEach(r=>{ghMap[r._id]=r;});
+                let changed=false;
+                riders=riders.map(r=>{
+                  if(ghMap[r._id]&&ghMap[r._id].code&&ghMap[r._id].code!==r.code){changed=true;return{...r,...ghMap[r._id]};}
+                  return r;
+                });
+                if(changed){localSave();renderAdmin();toast('POC updates received!');}
+              }
+            }
+          }
+        }catch(e){}
+      }
+    },90000);
+  }else{
+    // Restore POC's saved progress from localStorage first
+    const savedPoc = localStorage.getItem('crm_poc_'+name.toLowerCase());
+    if(savedPoc){ 
+      try{ riders = JSON.parse(savedPoc); }catch(e){}
+    }
+    renderPoc();
+    setSyncStatus('spin','Loading data...');
+    loadFromGitHub().then(ok=>{
+      if(ok){
+        // Merge: keep POC's saved updates on top of fresh GitHub data
+        if(savedPoc){
+          try{
+            const saved=JSON.parse(savedPoc);
+            const savedMap={};
+            saved.forEach(r=>{if(r.status==='done'||r.code)savedMap[r._id]=r;});
+            riders=riders.map(r=>savedMap[r._id]?{...r,...savedMap[r._id]}:r);
+          }catch(e){}
+        }
+        setSyncStatus('ok','Data loaded');setLastSync();renderPoc();
+      }else{setSyncStatus('','Using local data');}
+    }).catch(()=>setSyncStatus('','Using local data'));
+  }}
+function logout(){
+  // Save current state before logout so POC doesn't lose progress
+  if(currentUser && currentRole==='poc'){
+    localStorage.setItem('crm_poc_'+currentUser.toLowerCase(), JSON.stringify(riders));
+  }
+  currentUser=null;currentRole=null;accessToken=null;driveItemId=null;
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('loginOuter').style.display='flex';
+  document.getElementById('adminView').style.display='none';
+  document.getElementById('pocView').style.display='none';
+  document.getElementById('exportBtn').style.display='none';
+  document.getElementById('refreshGhBtn').style.display='none';
+  document.getElementById('loginName').value='';
+  document.getElementById('adminPin').value='';
+  document.getElementById('loginRole').value='poc';
+  document.getElementById('pinRow').style.display='none';
+}
 function fc(h,kws){for(const kw of kws){const i=h.findIndex(x=>x.toLowerCase().replace(/[\s_]/g,'').includes(kw.toLowerCase()));if(i>=0)return i;}return -1;}
 function gv(cols,i){return i>=0&&cols[i]?cols[i].trim().replace(/^"|"$/g,''):''}
 function loadCSV(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async function(ev){const lines=ev.target.result.split('\n').filter(l=>l.trim());if(lines.length<2){alert('CSV is empty.');return;}const h=lines[0].split(',').map(x=>x.trim().replace(/^"|"$/g,''));const ci={date:fc(h,['date']),projtype:fc(h,['project','projecttype']),type:fc(h,['type']),poc:fc(h,['poc','pocname']),ridername:fc(h,['ridername','rider']),passport:fc(h,['passport']),mob:fc(h,['mob','mobile']),client:fc(h,['clientattendance','client'])};let added=0;lines.slice(1).forEach(line=>{if(!line.trim())return;const cols=line.split(',');riders.push({_id:uid(),date:gv(cols,ci.date)||new Date().toISOString().slice(0,10),projtype:gv(cols,ci.projtype),type:gv(cols,ci.type),poc:gv(cols,ci.poc)||gv(cols,0),ridername:gv(cols,ci.ridername),passport:gv(cols,ci.passport),mob:gv(cols,ci.mob),client:gv(cols,ci.client),code:'',subcode:'',remarks:'',updatedBy:'',updatedAt:'',status:'pending'});added++;});await saveToOneDrive();renderAdmin();toast(added+' riders loaded!');e.target.value='';};reader.readAsText(file);}
