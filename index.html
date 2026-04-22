@@ -226,8 +226,7 @@ async function saveToGitHub(dataToSave){
     if(r.ok){
       const d=await r.json();
       sha=d.sha;
-      const decoded=atob(d.content.replace(/
-/g,''));
+      const decoded=atob(d.content.replace(/\n/g,''));
       currentGhData=JSON.parse(decodeURIComponent(escape(decoded)));
     }
   }catch(e){}
@@ -251,7 +250,7 @@ function initMsal(){
     setSyncStatus('','Click to connect OneDrive');
     return;
   }
-  try{msalApp=new msal.PublicClientApplication({auth:{clientId:CRM_CONFIG.clientId,authority:'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',redirectUri:'https://deliveries1885-web.github.io'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});msalApp.handleRedirectPromise().then(resp=>{
+  try{msalApp=new msal.PublicClientApplication({auth:{clientId:CRM_CONFIG.clientId,authority:'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',redirectUri:'https://absence-crm.deliveries1885.workers.dev'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});msalApp.handleRedirectPromise().then(resp=>{
       if(resp&&resp.accessToken){accessToken=resp.accessToken;onConnected();return;}
       const accts=msalApp.getAllAccounts();
       if(accts.length>0){
