@@ -194,6 +194,14 @@ tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#f0f6ff}
 </div>
 <div class="toast" id="toast"></div>
 <script>
+// Clean MSAL redirect params from URL if present
+(function(){
+  const url = window.location.href;
+  if(url.includes('code=') || url.includes('error=') || url.includes('state=')){
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+})();
+
 const CODE_MAP={'Present':['On Duty'],'Absent':['Absconding','Accident','Bike Issue','Cancelled','COD Issue','Cycle Issue','Defaulter','Family Issue','Financial Issue','Fuel Issue','Left','Health Issue','ID Blocked','Late Login','Moved to Another Project','Not Responding','Resigned','Salary Advance Issue','Shift Issue','Terminated','Weather Issue','Zone Issue','Others'],'Vacation':['Vacation'],'Week Off':['Weekoff']};
 const CODES=Object.keys(CODE_MAP);
 let riders=JSON.parse(localStorage.getItem('crm_final')||'[]');
@@ -238,7 +246,18 @@ async function saveToGitHub(dataToSave){
   if(!r2.ok)throw new Error('GitHub save failed '+r2.status);
 }
 async function loadFromGitHub(){try{const url='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();const r=await fetch(url);if(r.ok){const t=await r.text();if(t&&t.trim().startsWith('[')){riders=JSON.parse(t);localSave();return true;}}}catch(e){}return false;}
-function initMsal(){try{msalApp=new msal.PublicClientApplication({auth:{clientId:CRM_CONFIG.clientId,authority:'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',redirectUri:'https://deliveries1885-web.github.io/absence-crm'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});msalApp.handleRedirectPromise().then(resp=>{if(resp&&resp.accessToken){accessToken=resp.accessToken;onConnected();return;}const accts=msalApp.getAllAccounts();if(accts.length>0){msalApp.acquireTokenSilent({account:accts[0],scopes:['Files.ReadWrite']}).then(r=>{accessToken=r.accessToken;onConnected();}).catch(()=>setSyncStatus('','Click to connect OneDrive'));}else{setSyncStatus('','Click to connect OneDrive');}}).catch(()=>setSyncStatus('','Click to connect OneDrive'));}catch(e){setSyncStatus('err','MSAL error: '+e.message);}}
+function initMsal(){try{msalApp=new msal.PublicClientApplication({auth:{clientId:CRM_CONFIG.clientId,authority:'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',redirectUri:'https://deliveries1885-web.github.io/absence-crm'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});msalApp.handleRedirectPromise().then(resp=>{
+      if(resp&&resp.accessToken){accessToken=resp.accessToken;onConnected();return;}
+      const accts=msalApp.getAllAccounts();
+      if(accts.length>0){
+        msalApp.acquireTokenSilent({account:accts[0],scopes:['Files.ReadWrite']})
+          .then(r=>{accessToken=r.accessToken;onConnected();})
+          .catch(()=>setSyncStatus('','Click to connect OneDrive'));
+      }else{setSyncStatus('','Click to connect OneDrive');}
+    }).catch(e=>{
+      console.log('MSAL redirect handled:',e.message);
+      setSyncStatus('','Click to connect OneDrive');
+    });}catch(e){setSyncStatus('err','MSAL error: '+e.message);}}
 async function connectOneDrive(){if(!msalApp){toast('Not initialized.');return;}if(accessToken){toast('Already connected!');return;}setSyncStatus('spin','Connecting...');try{const r=await msalApp.acquireTokenPopup({scopes:['Files.ReadWrite']});accessToken=r.accessToken;await onConnected();}catch(e){setSyncStatus('err','Sign-in failed');toast('OneDrive sign-in failed.');}}
 async function onConnected(){
   setSyncStatus('spin','Loading...');
