@@ -1,6 +1,0 @@
-name = "absence-crm"
-compatibility_date = "2024-01-01"
-
-[[kv_namespaces]]
-binding = "CRM_DATA"
-id = "e7254a2f9247455b963a039c4971a8f8"
