@@ -6,7 +6,7 @@
 <title>Absence CRM</title>
 <script>
 const _a='ghp_cAUGiE',_b='UDIQpp0Vyo',_c='fnVjhbY2mWtsnr2jUDFw';
-const CRM_CONFIG={ghToken:_a+_b+_c,ghRepo:'deliveries1885-web/absence-crm',ghFile:'data.json',clientId:'8a033239-ba9e-4731-908b-2d25da6975ad',adminPin:'1234',fileName:'RiderAbsenceCRM_Data.json'};
+const CRM_CONFIG={ghToken:_a+_b+_c,ghRepo:'deliveries1885-web/deliveries1885-web.github.io',ghFile:'data.json',clientId:'8a033239-ba9e-4731-908b-2d25da6975ad',adminPin:'1234',fileName:'RiderAbsenceCRM_Data.json'};
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.32.2/lib/msal-browser.min.js" onerror="console.log('MSAL failed to load - OneDrive disabled')"></script>
 <style>
@@ -251,7 +251,7 @@ function initMsal(){
     setSyncStatus('','Click to connect OneDrive');
     return;
   }
-  try{msalApp=new msal.PublicClientApplication({auth:{clientId:CRM_CONFIG.clientId,authority:'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',redirectUri:'https://deliveries1885-web.github.io/absence-crm'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});msalApp.handleRedirectPromise().then(resp=>{
+  try{msalApp=new msal.PublicClientApplication({auth:{clientId:CRM_CONFIG.clientId,authority:'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',redirectUri:'https://deliveries1885-web.github.io'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});msalApp.handleRedirectPromise().then(resp=>{
       if(resp&&resp.accessToken){accessToken=resp.accessToken;onConnected();return;}
       const accts=msalApp.getAllAccounts();
       if(accts.length>0){
