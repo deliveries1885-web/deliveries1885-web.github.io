@@ -4,11 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Absence CRM</title>
-<script>
-const _a='ghp_cAUGiE',_b='UDIQpp0Vyo',_c='fnVjhbY2mWtsnr2jUDFw';
-const CRM_CONFIG={ghToken:_a+_b+_c,ghRepo:'deliveries1885-web/deliveries1885-web.github.io',ghFile:'data.json',clientId:'8a033239-ba9e-4731-908b-2d25da6975ad',adminPin:'1234',fileName:'RiderAbsenceCRM_Data.json'};
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.32.2/lib/msal-browser.min.js" onerror="console.log('MSAL failed to load - OneDrive disabled')"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Segoe UI,system-ui,sans-serif;background:#f0f2f5;min-height:100vh;color:#1a1a1a}
@@ -30,7 +25,7 @@ body{font-family:Segoe UI,system-ui,sans-serif;background:#f0f2f5;min-height:100
 .pill{font-size:11px;padding:2px 10px;border-radius:20px;font-weight:600;border:1px solid}
 .pill.blue{background:#e3f0fc;color:#004f9e;border-color:#b3d4f5}
 .pill.green{background:#dff6dd;color:#0b5a0b;border-color:#9fd89f}
-.sync-row{display:flex;align-items:center;gap:6px;font-size:11px;color:#999;cursor:pointer}
+.sync-row{display:flex;align-items:center;gap:6px;font-size:11px;color:#999}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc}
 .sync-dot.ok{background:#107c10}
 .sync-dot.err{background:#d13438}
@@ -110,7 +105,6 @@ tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#f0f6ff}
     <p class="hint">Admin PIN: <strong>1234</strong><br>POC name must match POC column in CSV exactly</p>
   </div>
 </div>
-
 <div id="mainApp" style="display:none">
 <div class="shell">
   <div class="topbar">
@@ -120,18 +114,15 @@ tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#f0f6ff}
       <span class="pill" id="topPill"></span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div class="sync-row" id="syncRow" onclick="connectOneDrive()"><div class="sync-dot" id="syncDot"></div><span id="syncText">Not connected</span></div>
+      <div class="sync-row"><div class="sync-dot" id="syncDot"></div><span id="syncText">Ready</span></div>
       <button class="btn green" id="exportBtn" style="display:none" onclick="exportCSV()">Export CSV</button>
-      <button class="btn blue" id="syncGhBtn" onclick="forceSyncGitHub()">&#8593; Sync to GitHub</button>
-      <button class="btn" id="refreshGhBtn" onclick="refreshFromGitHub()" style="display:none">&#8595; Pull POC updates</button>
       <button class="btn" onclick="logout()">Sign out</button>
     </div>
   </div>
-
   <div id="adminView" style="display:none">
     <div class="stats" id="adminStats"></div>
     <div class="card">
-      <div class="card-head"><span class="card-title">POC progress today</span><span id="lastSync" style="font-size:11px;color:#bbb"></span></div>
+      <div class="card-head"><span class="card-title">POC progress</span><span id="lastSync" style="font-size:11px;color:#bbb"></span></div>
       <div class="poc-grid" id="pocGrid"></div>
     </div>
     <div class="card">
@@ -155,18 +146,13 @@ tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#f0f6ff}
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr>
-            <th>#</th><th>Rider Name</th><th>Date</th><th>Project</th><th>Type</th><th>POC</th><th>Passport</th><th>Mobile</th><th>Client</th>
-            <th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th>
-            <th>Updated by</th><th>Status</th><th>Save</th><th>Del</th>
-          </tr></thead>
+          <thead><tr><th>#</th><th>Rider Name</th><th>Date</th><th>Project</th><th>Type</th><th>POC</th><th>Passport</th><th>Mobile</th><th>Client</th><th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th><th>Updated by</th><th>Status</th><th>Save</th><th>Del</th></tr></thead>
           <tbody id="adminTable"></tbody>
         </table>
         <div id="adminEmpty" class="empty-state">No riders loaded. Upload your CSV above.</div>
       </div>
     </div>
   </div>
-
   <div id="pocView" style="display:none">
     <div class="stats" id="pocStats"></div>
     <div class="card">
@@ -179,11 +165,7 @@ tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#f0f6ff}
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr>
-            <th>#</th><th>Rider Name</th><th>Date</th><th>Project</th><th>Type</th><th>POC</th><th>Passport</th><th>Mobile</th><th>Client</th>
-            <th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th>
-            <th>Status</th><th>Save</th>
-          </tr></thead>
+          <thead><tr><th>#</th><th>Rider Name</th><th>Date</th><th>Project</th><th>Type</th><th>POC</th><th>Passport</th><th>Mobile</th><th>Client</th><th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th><th>Status</th><th>Save</th></tr></thead>
           <tbody id="pocTable"></tbody>
         </table>
         <div id="pocEmpty" class="empty-state">No riders assigned to you yet.</div>
@@ -194,237 +176,38 @@ tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#f0f6ff}
 </div>
 <div class="toast" id="toast"></div>
 <script>
-// Clean MSAL redirect params from URL if present
-(function(){
-  const url = window.location.href;
-  if(url.includes('code=') || url.includes('error=') || url.includes('state=')){
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-})();
-
+const ADMIN_PIN='1234';
+const API='/api';
 const CODE_MAP={'Present':['On Duty'],'Absent':['Absconding','Accident','Bike Issue','Cancelled','COD Issue','Cycle Issue','Defaulter','Family Issue','Financial Issue','Fuel Issue','Left','Health Issue','ID Blocked','Late Login','Moved to Another Project','Not Responding','Resigned','Salary Advance Issue','Shift Issue','Terminated','Weather Issue','Zone Issue','Others'],'Vacation':['Vacation'],'Week Off':['Weekoff']};
 const CODES=Object.keys(CODE_MAP);
-let riders=JSON.parse(localStorage.getItem('crm_final')||'[]');
-let currentUser=null,currentRole=null,msalApp=null,accessToken=null,driveItemId=null;
-function localSave(){try{localStorage.setItem('crm_final',JSON.stringify(riders));}catch(e){}}
+let riders=[],currentUser=null,currentRole=null;
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function ini(n){return(n||'?').split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);}
 function toast(msg,dur){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur||2500);}
 function setSyncStatus(state,text){document.getElementById('syncDot').className='sync-dot '+(state||'');document.getElementById('syncText').textContent=text;}
 function setLastSync(){const el=document.getElementById('lastSync');if(el)el.textContent='Last sync: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
-function codeDD(id,val){return '<select class="mini" id="c_'+id+'" onchange="onCodeChange(this.dataset.rid)" data-rid="'+id+'" style="width:110px"><option value="">- Code -</option>'+CODES.map(c=>'<option value="'+c+'"'+(c===val?' selected':'')+'>'+c+'</option>').join('')+'</select>';}
+async function apiGet(){const r=await fetch(API+'/riders');if(!r.ok)throw new Error('Load failed');return r.json();}
+async function apiPut(data){const r=await fetch(API+'/riders',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw new Error('Save failed');}
+async function apiSaveRow(rider){const r=await fetch(API+'/riders/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rider)});if(!r.ok)throw new Error('Save failed');}
+async function apiDelete(id){await fetch(API+'/riders/'+id,{method:'DELETE'});}
+async function apiClearAll(){await fetch(API+'/riders',{method:'DELETE'});}
+function codeDD(id,val){return '<select class="mini" id="c_'+id+'" onchange="onCodeChange(\''+id+'\')" style="width:110px"><option value="">- Code -</option>'+CODES.map(c=>'<option value="'+c+'"'+(c===val?' selected':'')+'>'+c+'</option>').join('')+'</select>';}
 function subDD(id,code,val){const subs=code&&CODE_MAP[code]?CODE_MAP[code]:[];return '<select class="mini" id="s_'+id+'" style="width:155px"'+(subs.length===0?' disabled':'')+'>'+('<option value="">- Subcode -</option>')+subs.map(s=>'<option value="'+s+'"'+(s===val?' selected':'')+'>'+s+'</option>').join('')+'</select>';}
-function onCodeChange(id){const rid=id||this&&this.dataset&&this.dataset.rid;if(!rid)return;const code=document.getElementById('c_'+rid).value;const subs=code&&CODE_MAP[code]?CODE_MAP[code]:[];const el=document.getElementById('s_'+rid);if(!el)return;el.innerHTML='<option value="">- Subcode -</option>'+subs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');el.disabled=subs.length===0;if(subs.length===1)el.value=subs[0];}
-async function saveToGitHub(dataToSave){
-  const base='https://api.github.com/repos/'+CRM_CONFIG.ghRepo+'/contents/'+CRM_CONFIG.ghFile;
-  const hdrs={'Authorization':'token '+CRM_CONFIG.ghToken,'Content-Type':'application/json'};
-  
-  // Get current GitHub data first
-  let sha=null, currentGhData=[];
-  try{
-    const r=await fetch(base,{headers:hdrs});
-    if(r.ok){
-      const d=await r.json();
-      sha=d.sha;
-      const decoded=atob(d.content.replace(/\n/g,''));
-      currentGhData=JSON.parse(decodeURIComponent(escape(decoded)));
-    }
-  }catch(e){}
-  
-  // If POC saving, merge only their updates into current GitHub data
-  let finalData = dataToSave || riders;
-  if(currentRole==='poc' && currentGhData.length>0){
-    // Merge: keep GitHub as base, apply only updated riders from local
-    const localMap={};
-    riders.forEach(r=>{if(r.status==='done'||r.updatedBy)localMap[r._id]=r;});
-    finalData=currentGhData.map(r=>localMap[r._id]?{...r,...localMap[r._id]}:r);
-  }
-  
-  const body={message:'update by '+currentUser,content:btoa(unescape(encodeURIComponent(JSON.stringify(finalData)))),...(sha?{sha}:{})};
-  const r2=await fetch(base,{method:'PUT',headers:hdrs,body:JSON.stringify(body)});
-  if(!r2.ok)throw new Error('GitHub save failed '+r2.status);
-}
-async function loadFromGitHub(){try{const url='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();const r=await fetch(url);if(r.ok){const t=await r.text();if(t&&t.trim().startsWith('[')){riders=JSON.parse(t);localSave();return true;}}}catch(e){}return false;}
-function initMsal(){
-  if(typeof msal === 'undefined'){
-    setSyncStatus('','Click to connect OneDrive');
-    return;
-  }
-  try{msalApp=new msal.PublicClientApplication({auth:{clientId:CRM_CONFIG.clientId,authority:'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',redirectUri:'https://absence-crm.deliveries1885.workers.dev'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});msalApp.handleRedirectPromise().then(resp=>{
-      if(resp&&resp.accessToken){accessToken=resp.accessToken;onConnected();return;}
-      const accts=msalApp.getAllAccounts();
-      if(accts.length>0){
-        msalApp.acquireTokenSilent({account:accts[0],scopes:['Files.ReadWrite']})
-          .then(r=>{accessToken=r.accessToken;onConnected();})
-          .catch(()=>setSyncStatus('','Click to connect OneDrive'));
-      }else{setSyncStatus('','Click to connect OneDrive');}
-    }).catch(e=>{
-      console.log('MSAL redirect handled:',e.message);
-      setSyncStatus('','Click to connect OneDrive');
-    });}catch(e){setSyncStatus('err','MSAL error: '+e.message);}}
-async function connectOneDrive(){if(!msalApp){toast('Not initialized.');return;}if(accessToken){toast('Already connected!');return;}setSyncStatus('spin','Connecting...');try{const r=await msalApp.acquireTokenPopup({scopes:['Files.ReadWrite']});accessToken=r.accessToken;await onConnected();}catch(e){setSyncStatus('err','Sign-in failed');toast('OneDrive sign-in failed.');}}
-async function onConnected(){
-  setSyncStatus('spin','Loading...');
-  // Load from GitHub first (has latest POC updates), then merge with OneDrive
-  await loadFromOneDrive();
-  setSyncStatus('ok','Connected to OneDrive');
-  if(currentRole==='admin')renderAdmin();else renderPoc();
-}
-async function getOrCreateFile(){if(driveItemId)return driveItemId;try{const r=await fetch('https://graph.microsoft.com/v1.0/me/drive/root:/'+CRM_CONFIG.fileName,{headers:{'Authorization':'Bearer '+accessToken}});if(r.ok){const d=await r.json();driveItemId=d.id;return driveItemId;}}catch(e){}const r2=await fetch('https://graph.microsoft.com/v1.0/me/drive/root:/'+CRM_CONFIG.fileName+':/content',{method:'PUT',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:'[]'});const d2=await r2.json();driveItemId=d2.id;return driveItemId;}
-async function saveToOneDrive(){localSave();if(!accessToken)return;setSyncStatus('spin','Saving...');try{const id=await getOrCreateFile();await fetch('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/content',{method:'PUT',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(riders)});setSyncStatus('ok','Saved to OneDrive');setLastSync();try{await saveToGitHub();setSyncStatus('ok','Saved + Synced');}catch(e){console.log('GitHub sync:',e.message);}}catch(e){setSyncStatus('err','Save failed');console.error(e);}}
-async function loadFromOneDrive(){
-  if(!accessToken){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');return;}
-  try{
-    const id=await getOrCreateFile();
-    const r=await fetch('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/content',{headers:{'Authorization':'Bearer '+accessToken}});
-    const text=await r.text();
-    const oneDriveData=text?JSON.parse(text):[];
-    
-    // Also get latest from GitHub (has POC updates)
-    try{
-      const ghUrl='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();
-      const ghR=await fetch(ghUrl);
-      if(ghR.ok){
-        const ghText=await ghR.text();
-        if(ghText&&ghText.trim().startsWith('[')){
-          const ghData=JSON.parse(ghText);
-          // Merge: use GitHub data as base (has POC updates), keep same rider list
-          if(ghData.length>0){
-            // Map GitHub updates onto OneDrive data by _id
-            const ghMap={};
-            ghData.forEach(r=>{ghMap[r._id]=r;});
-            riders=oneDriveData.map(r=>ghMap[r._id]?{...r,...ghMap[r._id]}:r);
-          } else {
-            riders=oneDriveData;
-          }
-        } else { riders=oneDriveData; }
-      } else { riders=oneDriveData; }
-    } catch(e){ riders=oneDriveData; }
-    
-    localSave();setLastSync();
-  }catch(e){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');}
-}
-function doLogin(){const name=document.getElementById('loginName').value.trim();const role=document.getElementById('loginRole').value;const pin=document.getElementById('adminPin').value;if(!name){alert('Enter your name.');return;}if(role==='admin'&&pin!==CRM_CONFIG.adminPin){alert('Wrong PIN.');return;}currentUser=name;currentRole=role;document.getElementById('loginOuter').style.display='none';document.getElementById('mainApp').style.display='block';const pill=document.getElementById('topPill');if(role==='admin'){pill.textContent='Admin';pill.className='pill blue';document.getElementById('exportBtn').style.display='inline-block';document.getElementById('refreshGhBtn').style.display='inline-block';document.getElementById('adminView').style.display='block';}else{pill.textContent=name;pill.className='pill green';document.getElementById('pocView').style.display='block';}riders=JSON.parse(localStorage.getItem('crm_final')||'[]');if(role==='admin'){
-    renderAdmin();
-    initMsal();
-    // Auto-pull POC updates every 90 seconds
-    setInterval(async()=>{
-      if(currentRole==='admin'){
-        try{
-          const url='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();
-          const r=await fetch(url);
-          if(r.ok){
-            const text=await r.text();
-            if(text&&text.trim().startsWith('[')){
-              const ghData=JSON.parse(text);
-              if(ghData.length>0){
-                const ghMap={};
-                ghData.forEach(r=>{ghMap[r._id]=r;});
-                let changed=false;
-                riders=riders.map(r=>{
-                  if(ghMap[r._id]&&ghMap[r._id].code&&ghMap[r._id].code!==r.code){changed=true;return{...r,...ghMap[r._id]};}
-                  return r;
-                });
-                if(changed){localSave();renderAdmin();toast('POC updates received!');}
-              }
-            }
-          }
-        }catch(e){}
-      }
-    },90000);
-  }else{
-    // Restore POC's saved progress from localStorage first
-    const savedPoc = localStorage.getItem('crm_poc_'+name.toLowerCase());
-    if(savedPoc){ 
-      try{ riders = JSON.parse(savedPoc); }catch(e){}
-    }
-    renderPoc();
-    setSyncStatus('spin','Loading data...');
-    loadFromGitHub().then(ok=>{
-      if(ok){
-        // Merge: keep POC's saved updates on top of fresh GitHub data
-        if(savedPoc){
-          try{
-            const saved=JSON.parse(savedPoc);
-            const savedMap={};
-            saved.forEach(r=>{if(r.status==='done'||r.code)savedMap[r._id]=r;});
-            riders=riders.map(r=>savedMap[r._id]?{...r,...savedMap[r._id]}:r);
-          }catch(e){}
-        }
-        setSyncStatus('ok','Data loaded');setLastSync();renderPoc();
-      }else{setSyncStatus('','Using local data');}
-    }).catch(()=>setSyncStatus('','Using local data'));
-  }}
-function logout(){
-  // Save current state before logout so POC doesn't lose progress
-  if(currentUser && currentRole==='poc'){
-    localStorage.setItem('crm_poc_'+currentUser.toLowerCase(), JSON.stringify(riders));
-  }
-  currentUser=null;currentRole=null;accessToken=null;driveItemId=null;
-  document.getElementById('mainApp').style.display='none';
-  document.getElementById('loginOuter').style.display='flex';
-  document.getElementById('adminView').style.display='none';
-  document.getElementById('pocView').style.display='none';
-  document.getElementById('exportBtn').style.display='none';
-  document.getElementById('refreshGhBtn').style.display='none';
-  document.getElementById('loginName').value='';
-  document.getElementById('adminPin').value='';
-  document.getElementById('loginRole').value='poc';
-  document.getElementById('pinRow').style.display='none';
-}
-function fc(h,kws){for(const kw of kws){const i=h.findIndex(x=>x.toLowerCase().replace(/[\s_]/g,'').includes(kw.toLowerCase()));if(i>=0)return i;}return -1;}
-function gv(cols,i){return i>=0&&cols[i]?cols[i].trim().replace(/^"|"$/g,''):''}
-function loadCSV(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async function(ev){const lines=ev.target.result.split('\n').filter(l=>l.trim());if(lines.length<2){alert('CSV is empty.');return;}const h=lines[0].split(',').map(x=>x.trim().replace(/^"|"$/g,''));const ci={date:fc(h,['date']),projtype:fc(h,['project','projecttype']),type:fc(h,['type']),poc:fc(h,['poc','pocname']),ridername:fc(h,['ridername','rider']),passport:fc(h,['passport']),mob:fc(h,['mob','mobile']),client:fc(h,['clientattendance','client'])};let added=0;lines.slice(1).forEach(line=>{if(!line.trim())return;const cols=line.split(',');riders.push({_id:uid(),date:gv(cols,ci.date)||new Date().toISOString().slice(0,10),projtype:gv(cols,ci.projtype),type:gv(cols,ci.type),poc:gv(cols,ci.poc)||gv(cols,0),ridername:gv(cols,ci.ridername),passport:gv(cols,ci.passport),mob:gv(cols,ci.mob),client:gv(cols,ci.client),code:'',subcode:'',remarks:'',updatedBy:'',updatedAt:'',status:'pending'});added++;});await saveToOneDrive();renderAdmin();toast(added+' riders loaded!');e.target.value='';};reader.readAsText(file);}
+function onCodeChange(id){const code=document.getElementById('c_'+id).value;const subs=code&&CODE_MAP[code]?CODE_MAP[code]:[];const el=document.getElementById('s_'+id);if(!el)return;el.innerHTML='<option value="">- Subcode -</option>'+subs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');el.disabled=subs.length===0;if(subs.length===1)el.value=subs[0];}
 function renderStats(el,list){const total=list.length,done=list.filter(r=>r.status==='done').length,pend=total-done,pct=total?Math.round(done/total*100):0;document.getElementById(el).innerHTML='<div class="stat"><div class="stat-label">Total riders</div><div class="stat-value">'+total+'</div></div><div class="stat"><div class="stat-label">Updated</div><div class="stat-value" style="color:#107c10">'+done+'</div></div><div class="stat"><div class="stat-label">Pending</div><div class="stat-value" style="color:#835c00">'+pend+'</div></div><div class="stat"><div class="stat-label">Completion</div><div class="stat-value" style="color:#0078d4">'+pct+'%</div></div>';}
 function renderPocGrid(){const pocs=[...new Set(riders.map(r=>r.poc).filter(Boolean))].sort();const el=document.getElementById('pocGrid');if(!pocs.length){el.innerHTML='<p style="font-size:12px;color:#bbb;padding-bottom:12px">No riders loaded yet.</p>';return;}el.innerHTML=pocs.map(poc=>{const my=riders.filter(r=>r.poc===poc);const done=my.filter(r=>r.status==='done').length,total=my.length,pct=total?Math.round(done/total*100):0;const col=pct===100?'#107c10':pct>=50?'#0078d4':'#835c00';return '<div class="poc-card"><div class="poc-name"><span class="ini g">'+ini(poc)+'</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+poc+'</span></div><div style="font-size:11px;font-weight:700;color:'+col+'">'+done+'/'+total+' - '+pct+'%</div><div class="poc-bar"><div class="poc-fill" style="width:'+pct+'%;background:'+col+'"></div></div></div>';}).join('');}
 function clearAF(){['aSearch','aPoc','aCode','aStatus','aDate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});renderAdmin();}
 function renderAdmin(){renderStats('adminStats',riders);renderPocGrid();const q=document.getElementById('aSearch').value.toLowerCase();const poc=document.getElementById('aPoc').value;const code=document.getElementById('aCode').value;const st=document.getElementById('aStatus').value;const dt=document.getElementById('aDate').value;let list=riders;if(poc)list=list.filter(r=>r.poc===poc);if(code)list=list.filter(r=>r.code===code);if(st)list=list.filter(r=>r.status===st);if(dt)list=list.filter(r=>r.date===dt);if(q)list=list.filter(r=>((r.ridername||'')+(r.poc||'')+(r.passport||'')+(r.mob||'')).toLowerCase().includes(q));const pocs=[...new Set(riders.map(r=>r.poc).filter(Boolean))].sort();const pf=document.getElementById('aPoc'),cp=pf.value;pf.innerHTML='<option value="">All POCs</option>'+pocs.map(p=>'<option value="'+p+'"'+(p===cp?' selected':'')+'>'+p+'</option>').join('');const tbody=document.getElementById('adminTable'),empty=document.getElementById('adminEmpty');if(!list.length){tbody.innerHTML='';empty.style.display='block';return;}empty.style.display='none';tbody.innerHTML=list.map((r,i)=>'<tr><td style="color:#bbb;font-size:10px">'+(i+1)+'</td><td style="font-weight:600">'+(r.ridername||'--')+'</td><td>'+(r.date||'--')+'</td><td>'+(r.projtype||'--')+'</td><td>'+(r.type||'--')+'</td><td><span class="ini g">'+ini(r.poc)+'</span>'+(r.poc||'--')+'</td><td style="font-family:Consolas,monospace;font-size:11px">'+(r.passport||'--')+'</td><td>'+(r.mob||'--')+'</td><td>'+(r.client||'--')+'</td><td style="background:rgba(220,255,220,.35)">'+codeDD(r._id,r.code)+'</td><td style="background:rgba(220,255,220,.35)">'+subDD(r._id,r.code,r.subcode)+'</td><td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_'+r._id+'" value="'+(r.remarks||'')+'" placeholder="Remarks..." style="width:150px"></td><td style="font-size:11px;color:#999">'+(r.updatedBy?'<span class="ini" style="width:19px;height:19px;font-size:8px">'+ini(r.updatedBy)+'</span>'+r.updatedBy:'--')+'</td><td><span class="badge '+(r.status==='done'?'done':'pending')+'">'+(r.status==='done'?'Done':'Pending')+'</span></td><td><button class="save-btn" onclick="saveRow(\''+r._id+'\')">Save</button></td><td><button class="del-btn" onclick="delRow(\''+r._id+'\')">Del</button></td></tr>').join('');}
 function renderPoc(){const myRiders=riders.filter(r=>r.poc&&r.poc.toLowerCase().trim()===currentUser.toLowerCase().trim());renderStats('pocStats',myRiders);const done=myRiders.filter(r=>r.status==='done').length;const pn=document.getElementById('pocNotice');if(pn)pn.innerHTML='Riders assigned to <strong>'+currentUser+'</strong> | '+done+' of '+myRiders.length+' updated';const q=document.getElementById('pSearch').value.toLowerCase();const st=document.getElementById('pStatus').value;let list=myRiders;if(st)list=list.filter(r=>r.status===st);if(q)list=list.filter(r=>((r.ridername||'')+(r.passport||'')+(r.mob||'')).toLowerCase().includes(q));const tbody=document.getElementById('pocTable'),empty=document.getElementById('pocEmpty');if(!tbody)return;if(!myRiders.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}if(empty)empty.style.display='none';if(!list.length){tbody.innerHTML='<tr><td colspan="14" style="text-align:center;padding:2rem;color:#ccc;font-size:12px">No riders match filter.</td></tr>';return;}tbody.innerHTML=list.map((r,i)=>'<tr><td style="color:#bbb;font-size:10px">'+(i+1)+'</td><td style="font-weight:600">'+(r.ridername||'--')+'</td><td>'+(r.date||'--')+'</td><td>'+(r.projtype||'--')+'</td><td>'+(r.type||'--')+'</td><td>'+(r.poc||'--')+'</td><td style="font-family:Consolas,monospace;font-size:11px">'+(r.passport||'--')+'</td><td>'+(r.mob||'--')+'</td><td>'+(r.client||'--')+'</td><td style="background:rgba(220,255,220,.35)">'+codeDD(r._id,r.code)+'</td><td style="background:rgba(220,255,220,.35)">'+subDD(r._id,r.code,r.subcode)+'</td><td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_'+r._id+'" value="'+(r.remarks||'')+'" placeholder="Remarks..." style="width:150px"></td><td><span class="badge '+(r.status==='done'?'done':'pending')+'">'+(r.status==='done'?'Done':'Pending')+'</span></td><td><button class="save-btn" onclick="saveRow(\''+r._id+'\')">Save</button></td></tr>').join('');}
-async function saveRow(id){const r=riders.find(x=>x._id===id);if(!r)return;const code=(document.getElementById('c_'+id)||{}).value||'';const sub=(document.getElementById('s_'+id)||{}).value||'';if(!code){toast('Please select a Code.');return;}if(CODE_MAP[code]&&CODE_MAP[code].length>0&&!sub){toast('Please select a Subcode.');return;}r.code=code;r.subcode=sub;r.remarks=(document.getElementById('rem_'+id)||{}).value||'';r.updatedBy=currentUser;r.updatedAt=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});r.status='done';if(currentRole==='poc'){localSave();setSyncStatus('spin','Saving...');try{await saveToGitHub();setSyncStatus('ok','Saved!');setLastSync();}catch(e){setSyncStatus('err','Save failed');console.error(e);}renderPoc();}else{await saveToOneDrive();renderAdmin();}toast('Saved!');}
-async function delRow(id){if(!confirm('Remove this rider?'))return;riders=riders.filter(x=>x._id!==id);await saveToOneDrive();renderAdmin();}
-async function clearAll(){if(!confirm('Delete ALL rider data?'))return;riders=[];await saveToOneDrive();try{await saveToGitHub();}catch(e){}renderAdmin();}
-async function refreshFromGitHub(){
-  setSyncStatus('spin','Pulling POC updates...');
-  try{
-    const url='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();
-    const r=await fetch(url);
-    if(r.ok){
-      const text=await r.text();
-      if(text&&text.trim().startsWith('[')){
-        const ghData=JSON.parse(text);
-        // Merge POC updates into current admin data
-        const ghMap={};
-        ghData.forEach(r=>{ghMap[r._id]=r;});
-        riders=riders.map(r=>ghMap[r._id]?{...r,...ghMap[r._id]}:r);
-        localSave();
-        // Save merged data back to OneDrive
-        if(accessToken) await saveToOneDrive();
-        setSyncStatus('ok','POC updates pulled!');
-        toast('POC updates loaded!');
-        renderAdmin();
-        return;
-      }
-    }
-    setSyncStatus('err','Pull failed');
-    toast('Could not pull updates');
-  }catch(e){setSyncStatus('err','Pull failed');console.error(e);}
-}
-
-async function forceSyncGitHub(){
-  if(!riders.length){ toast('No data to sync!'); return; }
-  setSyncStatus('spin','Syncing to GitHub...');
-  try{
-    await saveToGitHub();
-    setSyncStatus('ok','Synced to GitHub!');
-    toast('Synced! POCs can now refresh to see data.');
-  } catch(e){
-    setSyncStatus('err','Sync failed: '+e.message);
-    toast('GitHub sync failed: '+e.message);
-    console.error(e);
-  }
-}
-
+function fc(h,kws){for(const kw of kws){const i=h.findIndex(x=>x.toLowerCase().replace(/[\s_]/g,'').includes(kw.toLowerCase()));if(i>=0)return i;}return -1;}
+function gv(cols,i){return i>=0&&cols[i]?cols[i].trim().replace(/^"|"$/g,''):''}
+function loadCSV(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async function(ev){const lines=ev.target.result.split('\n').filter(l=>l.trim());if(lines.length<2){alert('CSV is empty.');return;}const h=lines[0].split(',').map(x=>x.trim().replace(/^"|"$/g,''));const ci={date:fc(h,['date']),projtype:fc(h,['project','projecttype']),type:fc(h,['type']),poc:fc(h,['poc','pocname']),ridername:fc(h,['ridername','rider']),passport:fc(h,['passport']),mob:fc(h,['mob','mobile']),client:fc(h,['clientattendance','client'])};let added=0;lines.slice(1).forEach(line=>{if(!line.trim())return;const cols=line.split(',');riders.push({_id:uid(),date:gv(cols,ci.date)||new Date().toISOString().slice(0,10),projtype:gv(cols,ci.projtype),type:gv(cols,ci.type),poc:gv(cols,ci.poc)||gv(cols,0),ridername:gv(cols,ci.ridername),passport:gv(cols,ci.passport),mob:gv(cols,ci.mob),client:gv(cols,ci.client),code:'',subcode:'',remarks:'',updatedBy:'',updatedAt:'',status:'pending'});added++;});setSyncStatus('spin','Saving to cloud...');try{await apiPut(riders);setSyncStatus('ok','Saved!');setLastSync();toast(added+' riders loaded!');}catch(err){setSyncStatus('err','Save failed');toast('Could not save to cloud.');}renderAdmin();e.target.value='';};reader.readAsText(file);}
+async function saveRow(id){const r=riders.find(x=>x._id===id);if(!r)return;const code=(document.getElementById('c_'+id)||{}).value||'';const sub=(document.getElementById('s_'+id)||{}).value||'';if(!code){toast('Please select a Code.');return;}if(CODE_MAP[code]&&CODE_MAP[code].length>0&&!sub){toast('Please select a Subcode.');return;}r.code=code;r.subcode=sub;r.remarks=(document.getElementById('rem_'+id)||{}).value||'';r.updatedBy=currentUser;r.updatedAt=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});r.status='done';setSyncStatus('spin','Saving...');try{await apiSaveRow(r);setSyncStatus('ok','Saved!');setLastSync();toast('Saved!');}catch(err){setSyncStatus('err','Save failed');toast('Save failed - check connection.');}if(currentRole==='poc')renderPoc();else renderAdmin();}
+async function delRow(id){if(!confirm('Remove this rider?'))return;riders=riders.filter(x=>x._id!==id);await apiDelete(id);renderAdmin();}
+async function clearAll(){if(!confirm('Delete ALL rider data?'))return;riders=[];await apiClearAll();renderAdmin();}
 function exportCSV(){const fields=['date','projtype','type','poc','ridername','passport','mob','client','code','subcode','remarks','updatedBy','updatedAt','status'];const labels=['Date','Project','Type','POC','RiderName','Passport','Mobile','ClientAttendance','Code','Subcode','Remarks','UpdatedBy','UpdatedAt','Status'];const rows=riders.map(r=>fields.map(f=>'"'+(String(r[f]||'').replace(/"/g,'""'))+'"').join(','));const csv=[labels.join(','),...rows].join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='AbsenceCRM_'+new Date().toISOString().slice(0,10)+'.csv';a.click();}
+async function doLogin(){const name=document.getElementById('loginName').value.trim();const role=document.getElementById('loginRole').value;const pin=document.getElementById('adminPin').value;if(!name){alert('Enter your name.');return;}if(role==='admin'&&pin!==ADMIN_PIN){alert('Wrong PIN.');return;}currentUser=name;currentRole=role;document.getElementById('loginOuter').style.display='none';document.getElementById('mainApp').style.display='block';const pill=document.getElementById('topPill');if(role==='admin'){pill.textContent='Admin';pill.className='pill blue';document.getElementById('exportBtn').style.display='inline-block';document.getElementById('adminView').style.display='block';}else{pill.textContent=name;pill.className='pill green';document.getElementById('pocView').style.display='block';}setSyncStatus('spin','Loading...');try{riders=await apiGet();setSyncStatus('ok','Connected');setLastSync();}catch(e){setSyncStatus('err','Could not load data');toast('Could not connect. Check Worker setup.');}if(role==='admin'){renderAdmin();setInterval(async()=>{try{riders=await apiGet();renderAdmin();setLastSync();}catch(e){}},30000);}else{renderPoc();}}
+function logout(){currentUser=null;currentRole=null;riders=[];document.getElementById('mainApp').style.display='none';document.getElementById('loginOuter').style.display='flex';document.getElementById('adminView').style.display='none';document.getElementById('pocView').style.display='none';document.getElementById('exportBtn').style.display='none';document.getElementById('loginName').value='';document.getElementById('adminPin').value='';document.getElementById('loginRole').value='poc';document.getElementById('pinRow').style.display='none';}
 </script>
 </body>
 </html>
