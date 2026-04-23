@@ -253,23 +253,15 @@ async function loadFromOneDrive(){
     const text=await r.text();
     const oneDriveData=text?JSON.parse(text):[];
     
-    // Also get latest from GitHub (has POC updates)
+    // Also get latest from KV (has POC updates)
     try{
-      const ghUrl='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();
-      const ghR=await fetch(ghUrl);
-      if(ghR.ok){
-        const ghText=await ghR.text();
-        if(ghText&&ghText.trim().startsWith('[')){
-          const ghData=JSON.parse(ghText);
-          // Merge: use GitHub data as base (has POC updates), keep same rider list
-          if(ghData.length>0){
-            // Map GitHub updates onto OneDrive data by _id
-            const ghMap={};
-            ghData.forEach(r=>{ghMap[r._id]=r;});
-            riders=oneDriveData.map(r=>ghMap[r._id]?{...r,...ghMap[r._id]}:r);
-          } else {
-            riders=oneDriveData;
-          }
+      const kvR=await fetch(KV_API+'/api/riders?t='+Date.now());
+      if(kvR.ok){
+        const kvData=await kvR.json();
+        if(Array.isArray(kvData)&&kvData.length>0){
+          const kvMap={};
+          kvData.forEach(r=>{kvMap[r._id]=r;});
+          riders=oneDriveData.map(r=>kvMap[r._id]?{...r,...kvMap[r._id]}:r);
         } else { riders=oneDriveData; }
       } else { riders=oneDriveData; }
     } catch(e){ riders=oneDriveData; }
@@ -282,26 +274,22 @@ function doLogin(){const name=document.getElementById('loginName').value.trim();
     setSyncStatus('spin','Loading...');
     loadFromGitHub().then(ok=>{if(ok){setSyncStatus('ok','Connected');setLastSync();renderAdmin();}else{setSyncStatus('err','Load failed');}});
     initMsal();
-    // Auto-pull POC updates every 90 seconds
+    // Auto-pull POC updates every 90 seconds from KV
     setInterval(async()=>{
       if(currentRole==='admin'){
         try{
-          const url='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();
-          const r=await fetch(url);
+          const r=await fetch(KV_API+'/api/riders?t='+Date.now());
           if(r.ok){
-            const text=await r.text();
-            if(text&&text.trim().startsWith('[')){
-              const ghData=JSON.parse(text);
-              if(ghData.length>0){
-                const ghMap={};
-                ghData.forEach(r=>{ghMap[r._id]=r;});
-                let changed=false;
-                riders=riders.map(r=>{
-                  if(ghMap[r._id]&&ghMap[r._id].code&&ghMap[r._id].code!==r.code){changed=true;return{...r,...ghMap[r._id]};}
-                  return r;
-                });
-                if(changed){localSave();renderAdmin();toast('POC updates received!');}
-              }
+            const kvData=await r.json();
+            if(Array.isArray(kvData)&&kvData.length>0){
+              const kvMap={};
+              kvData.forEach(r=>{kvMap[r._id]=r;});
+              let changed=false;
+              riders=riders.map(r=>{
+                if(kvMap[r._id]&&(kvMap[r._id].code!==r.code||kvMap[r._id].remarks!==r.remarks)){changed=true;return{...r,...kvMap[r._id]};}
+                return r;
+              });
+              if(changed){localSave();renderAdmin();toast('POC updates received!');}
             }
           }
         }catch(e){}
@@ -361,19 +349,14 @@ async function clearAll(){if(!confirm('Delete ALL rider data?'))return;riders=[]
 async function refreshFromGitHub(){
   setSyncStatus('spin','Pulling POC updates...');
   try{
-    const url='https://raw.githubusercontent.com/'+CRM_CONFIG.ghRepo+'/main/'+CRM_CONFIG.ghFile+'?t='+Date.now();
-    const r=await fetch(url);
+    const r=await fetch(KV_API+'/api/riders?t='+Date.now());
     if(r.ok){
-      const text=await r.text();
-      if(text&&text.trim().startsWith('[')){
-        const ghData=JSON.parse(text);
-        // Merge POC updates into current admin data
-        const ghMap={};
-        ghData.forEach(r=>{ghMap[r._id]=r;});
-        riders=riders.map(r=>ghMap[r._id]?{...r,...ghMap[r._id]}:r);
+      const kvData=await r.json();
+      if(Array.isArray(kvData)&&kvData.length>0){
+        const kvMap={};
+        kvData.forEach(r=>{kvMap[r._id]=r;});
+        riders=riders.map(r=>kvMap[r._id]?{...r,...kvMap[r._id]}:r);
         localSave();
-        // Save merged data back to OneDrive
-        if(accessToken) await saveToOneDrive();
         setSyncStatus('ok','POC updates pulled!');
         toast('POC updates loaded!');
         renderAdmin();
