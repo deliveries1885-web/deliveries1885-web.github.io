@@ -282,7 +282,7 @@ function doLogin(){const name=document.getElementById('loginName').value.trim();
     loadFromGitHub().then(ok=>{if(ok){setSyncStatus('ok','Connected');setLastSync();renderAdmin();}else{setSyncStatus('err','Load failed');}});
     initMsal();
     // Auto-backup every 30 minutes
-    setInterval(async()=>{if(currentRole==='admin'&&riders.length){await saveBackup();console.log('Auto-backup saved at '+new Date().toLocaleTimeString());}},30*60*1000);
+    setInterval(async()=>{if(currentRole==='admin'&&riders.length){await saveBackup();console.log('Auto-backup saved at '+new Date().toLocaleTimeString());}},60*60*1000);
     // Auto-pull POC updates every 90 seconds from KV
     setInterval(async()=>{
       if(currentRole==='admin'){
