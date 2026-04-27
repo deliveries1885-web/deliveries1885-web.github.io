@@ -276,10 +276,19 @@ async function loadFromOneDrive(){
     localSave();setLastSync();
   }catch(e){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');}
 }
-function doLogin(){const name=document.getElementById('loginName').value.trim();const role=document.getElementById('loginRole').value;const pin=document.getElementById('adminPin').value;if(!name){alert('Enter your name.');return;}if(role==='admin'&&pin!==CRM_CONFIG.adminPin){alert('Wrong PIN.');return;}currentUser=name;currentRole=role;document.getElementById('loginOuter').style.display='none';document.getElementById('mainApp').style.display='block';const pill=document.getElementById('topPill');if(role==='admin'){pill.textContent='Admin';pill.className='pill blue';document.getElementById('exportBtn').style.display='inline-block';document.getElementById('refreshGhBtn').style.display='inline-block';document.getElementById('restoreBtn').style.display='inline-block';document.getElementById('adminView').style.display='block';}else{pill.textContent=name;pill.className='pill green';document.getElementById('pocView').style.display='block';}riders=[];if(role==='admin'){
+async function doLogin(){const name=document.getElementById('loginName').value.trim();const role=document.getElementById('loginRole').value;const pin=document.getElementById('adminPin').value;if(!name){alert('Enter your name.');return;}if(role==='admin'&&pin!==CRM_CONFIG.adminPin){alert('Wrong PIN.');return;}currentUser=name;currentRole=role;document.getElementById('loginOuter').style.display='none';document.getElementById('mainApp').style.display='block';const pill=document.getElementById('topPill');if(role==='admin'){pill.textContent='Admin';pill.className='pill blue';document.getElementById('exportBtn').style.display='inline-block';document.getElementById('refreshGhBtn').style.display='inline-block';document.getElementById('restoreBtn').style.display='inline-block';document.getElementById('adminView').style.display='block';}else{pill.textContent=name;pill.className='pill green';document.getElementById('pocView').style.display='block';}riders=[];if(role==='admin'){
     renderAdmin();
     setSyncStatus('spin','Loading...');
-    loadFromGitHub().then(ok=>{if(ok){setSyncStatus('ok','Connected');setLastSync();renderAdmin();}else{setSyncStatus('err','Load failed');}});
+    // Load from localStorage first (most reliable)
+    riders=JSON.parse(localStorage.getItem('crm_final')||'[]');
+    if(riders.length>0){
+      setSyncStatus('ok','Connected');setLastSync();renderAdmin();
+      // Then silently merge any POC updates from KV
+      loadFromGitHub().then(()=>{renderAdmin();});
+    } else {
+      // No local data - load from KV
+      loadFromGitHub().then(ok=>{if(ok){setSyncStatus('ok','Connected');setLastSync();renderAdmin();}else{setSyncStatus('err','Load failed');}});
+    }
     initMsal();
     // Auto-backup every 30 minutes
     setInterval(async()=>{if(currentRole==='admin'&&riders.length){await saveBackup();console.log('Auto-backup saved at '+new Date().toLocaleTimeString());}},60*60*1000);
@@ -310,27 +319,32 @@ function doLogin(){const name=document.getElementById('loginName').value.trim();
       }
     },90000);
   }else{
-    // Restore POC's saved progress from localStorage first
-    const savedPoc = localStorage.getItem('crm_poc_'+name.toLowerCase());
-    if(savedPoc){ 
-      try{ riders = JSON.parse(savedPoc); }catch(e){}
-    }
-    renderPoc();
+    // POC: Load full rider list from KV, then apply any local saved progress
     setSyncStatus('spin','Loading data...');
-    loadFromGitHub().then(ok=>{
-      if(ok){
-        // Merge: keep POC's saved updates on top of fresh GitHub data
-        if(savedPoc){
-          try{
-            const saved=JSON.parse(savedPoc);
-            const savedMap={};
-            saved.forEach(r=>{if(r.status==='done'||r.code)savedMap[r._id]=r;});
-            riders=riders.map(r=>savedMap[r._id]?{...r,...savedMap[r._id]}:r);
-          }catch(e){}
-        }
-        setSyncStatus('ok','Data loaded');setLastSync();renderPoc();
-      }else{setSyncStatus('','Using local data');}
-    }).catch(()=>setSyncStatus('','Using local data'));
+    try{
+      const kvResp=await fetch(KV_API+'/api/riders?t='+Date.now());
+      if(kvResp.ok){
+        const kvData=await kvResp.json();
+        if(Array.isArray(kvData)&&kvData.length>0){
+          riders=kvData;
+          // Apply any locally saved POC progress on top
+          const savedPoc=localStorage.getItem('crm_poc_'+name.toLowerCase());
+          if(savedPoc){
+            try{
+              const saved=JSON.parse(savedPoc);
+              const savedMap={};
+              saved.forEach(r=>{if(r.status==='done'&&r.passport)savedMap[r.passport.trim()]=r;});
+              riders=riders.map(r=>{
+                const m=r.passport&&savedMap[r.passport.trim()];
+                return m?Object.assign({},r,{code:m.code,subcode:m.subcode,remarks:m.remarks,updatedBy:m.updatedBy,updatedAt:m.updatedAt,status:m.status}):r;
+              });
+            }catch(e){}
+          }
+          localSave();
+          setSyncStatus('ok','Data loaded');setLastSync();renderPoc();
+        }else{setSyncStatus('','Using local data');renderPoc();}
+      }else{setSyncStatus('','Using local data');renderPoc();}
+    }catch(e){setSyncStatus('','Using local data');renderPoc();}
   }}
 function logout(){
   // Save current state before logout so POC doesn't lose progress
@@ -356,17 +370,14 @@ function loadCSV(e){const file=e.target.files[0];if(!file)return;const reader=ne
 const newRiders=[];
 lines.slice(1).forEach(line=>{if(!line.trim())return;const cols=line.split(',');newRiders.push({_id:uid(),date:gv(cols,ci.date)||new Date().toISOString().slice(0,10),projtype:gv(cols,ci.projtype),type:gv(cols,ci.type),poc:gv(cols,ci.poc)||gv(cols,0),ridername:gv(cols,ci.ridername),passport:gv(cols,ci.passport),riderid:gv(cols,ci.riderid),mob:gv(cols,ci.mob),client:gv(cols,ci.client),code:'',subcode:'',remarks:'',updatedBy:'',updatedAt:'',status:'pending'});});
 setSyncStatus('spin','Loading...');
-// Build done map from BOTH local riders AND KV - whichever has done data
-let doneMap={};
-// First check local riders (most reliable - has current session data)
-riders.forEach(r=>{if(r.passport&&r.status==='done')doneMap[r.passport.trim()]=r;});
-// Then check KV (fills in any gaps)
+// Fetch existing KV data first - preserve any done/updated riders
+let kvDoneMap={};
 try{
   const kvR=await fetch(KV_API+'/api/riders?t='+Date.now());
-  if(kvR.ok){const kvData=await kvR.json();if(Array.isArray(kvData)){kvData.forEach(r=>{if(r.passport&&r.status==='done'&&!doneMap[r.passport.trim()])doneMap[r.passport.trim()]=r;});}}
+  if(kvR.ok){const kvData=await kvR.json();if(Array.isArray(kvData)){kvData.forEach(r=>{if(r.passport&&r.status==='done')kvDoneMap[r.passport.trim()]=r;});}}
 }catch(e){console.log('KV fetch skipped:',e);}
-// Merge: preserve any done rider from local or KV
-const merged=newRiders.map(r=>{const done=r.passport&&doneMap[r.passport.trim()];if(done)return{...r,code:done.code,subcode:done.subcode,remarks:done.remarks,updatedBy:done.updatedBy,updatedAt:done.updatedAt,status:done.status};return r;});
+// Merge: for each new CSV rider, keep POC updates if already done
+const merged=newRiders.map(r=>{const done=r.passport&&kvDoneMap[r.passport.trim()];if(done)return{...r,code:done.code,subcode:done.subcode,remarks:done.remarks,updatedBy:done.updatedBy,updatedAt:done.updatedAt,status:done.status};return r;});
 riders=merged;
 const preserved=Object.keys(kvDoneMap).length;
 localSave();
