@@ -220,7 +220,7 @@ function onCodeChange(id){const rid=id||this&&this.dataset&&this.dataset.rid;if(
 async function saveToGitHub(dataToSave){const finalData=dataToSave||riders;const r=await fetch(KV_API+'/api/riders',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(finalData)});if(!r.ok)throw new Error('KV save failed '+r.status);}
 async function saveBackup(){if(!riders.length)return;try{await fetch(KV_API+'/api/backup',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:riders,savedAt:new Date().toLocaleString('en-IN')})});}catch(e){console.log('Backup failed:',e);}}
 async function downloadBackup(){setSyncStatus('spin','Fetching backup...');try{const r=await fetch(KV_API+'/api/backup');if(r.ok){const b=await r.json();if(b&&b.data&&b.data.length){const fields=['date','projtype','type','poc','ridername','passport','riderid','client','code','subcode','remarks','updatedBy','updatedAt','status'];const labels=['Date','Project','Type','POC','RiderName','Passport','RiderID','ClientAttendance','Code','Subcode','Remarks','UpdatedBy','UpdatedAt','Status'];const rows=b.data.map(r=>fields.map(f=>'"'+(String(r[f]||'').replace(/"/g,'""'))+'"').join(','));const csv=[labels.join(','),...rows].join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='Backup_'+b.savedAt.replace(/[/:, ]/g,'_')+'.csv';a.click();setSyncStatus('ok','Backup downloaded!');toast('Backup downloaded! (Saved at: '+b.savedAt+')');}else{setSyncStatus('err','No backup found');toast('No backup available yet! Backup saves every 1 hour.');}}else{setSyncStatus('err','Backup failed');toast('Could not fetch backup!');}}catch(e){setSyncStatus('err','Backup failed');console.error(e);}}
-async function loadFromGitHub(){try{const r=await fetch(KV_API+'/api/riders?t='+Date.now());if(r.ok){const data=await r.json();if(Array.isArray(data)){riders=data;localSave();return true;}}}catch(e){console.error('KV load error:',e);}return false;}
+async function loadFromGitHub(){try{const r=await fetch(KV_API+'/api/riders?t='+Date.now());if(r.ok){const data=await r.json();if(Array.isArray(data)&&data.length>0){if(riders.length===0){riders=data;localSave();}else{const kvMap={};data.forEach(function(x){if(x.passport)kvMap[x.passport.trim()]=x;});let chg=false;riders=riders.map(function(x){var m=x.passport&&kvMap[x.passport.trim()];if(m&&m.status==='done'&&x.status!=='done'){chg=true;return Object.assign({},x,{code:m.code,subcode:m.subcode,remarks:m.remarks,updatedBy:m.updatedBy,updatedAt:m.updatedAt,status:m.status});}return x;});if(chg)localSave();}return true;}}}catch(e){console.error('KV load error:',e);}return false;}
 function initMsal(){
   if(typeof msal === 'undefined'){
     setSyncStatus('','Click to connect OneDrive');
@@ -416,23 +416,23 @@ async function delRow(id){if(!confirm('Remove this rider?'))return;riders=riders
 async function clearAll(){if(!confirm('⚠️ WARNING: This will delete ALL rider data!\n\nMake sure you have exported the CSV first.\n\nClick OK to continue...'))return;if(!confirm('Are you 100% sure? This CANNOT be undone!'))return;riders=[];localSave();setSyncStatus('spin','Clearing...');try{const r=await fetch(KV_API+'/api/riders',{method:'DELETE'});if(!r.ok)throw new Error();// Also clear backup
 await fetch(KV_API+'/api/backup',{method:'DELETE'}).catch(()=>{});setSyncStatus('ok','Cleared!');toast('All data deleted!');}catch(e){setSyncStatus('err','Clear failed');}renderAdmin();}
 async function refreshFromGitHub(){
+  if(!riders.length){toast('Please upload CSV first!');return;}
   setSyncStatus('spin','Pulling POC updates...');
   try{
     const r=await fetch(KV_API+'/api/riders?t='+Date.now());
     if(r.ok){
       const kvData=await r.json();
       if(Array.isArray(kvData)&&kvData.length>0){
-        // Merge by passport number (works even if _id differs)
-        const kvMap={};
-        kvData.forEach(r=>{if(r.passport)kvMap[r.passport.trim()]=r;});
-        let updated=0;
-        riders=riders.map(r=>{
-          const match=r.passport&&kvMap[r.passport.trim()];
-          if(match&&match.code){
+        var kvMap={};
+        kvData.forEach(function(x){if(x.passport)kvMap[x.passport.trim()]=x;});
+        var updated=0;
+        riders=riders.map(function(x){
+          var m=x.passport&&kvMap[x.passport.trim()];
+          if(m&&m.status==='done'){
             updated++;
-            return{...r,code:match.code,subcode:match.subcode,remarks:match.remarks,updatedBy:match.updatedBy,updatedAt:match.updatedAt,status:match.status};
+            return Object.assign({},x,{code:m.code,subcode:m.subcode,remarks:m.remarks,updatedBy:m.updatedBy,updatedAt:m.updatedAt,status:m.status});
           }
-          return r;
+          return x;
         });
         localSave();
         setSyncStatus('ok','POC updates pulled!');
@@ -441,8 +441,8 @@ async function refreshFromGitHub(){
         return;
       }
     }
-    setSyncStatus('err','Pull failed');
-    toast('Could not pull updates');
+    setSyncStatus('ok','No updates yet');
+    toast('No POC updates found');
   }catch(e){setSyncStatus('err','Pull failed');console.error(e);}
 }
 
