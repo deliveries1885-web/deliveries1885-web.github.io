@@ -5,16 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Absence CRM</title>
 <script>
-const _a='ghp_cAUGiE',_b='UDIQpp0Vyo',_c='fnVjhbY2mWtsnr2jUDFw';
-const KV_API='https://crm-api.deliveries1885.workers.dev';
-const CRM_CONFIG={ghToken:_a+_b+_c,ghRepo:'deliveries1885-web/deliveries1885-web.github.io',ghFile:'data.json',clientId:'8a033239-ba9e-4731-908b-2d25da6975ad',adminPin:'1234',fileName:'RiderAbsenceCRM_Data.json'};
+const CLIENT_ID='8a033239-ba9e-4731-908b-2d25da6975ad';
+const TENANT_ID='896fb671-d8c3-4078-96ca-4ee5cc8fbdde';
+const ADMIN_PIN='1234';
+const FILE_NAME='RiderAbsenceCRM_Data.json';
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.32.2/lib/msal-browser.min.js" onerror="console.log('MSAL failed to load - OneDrive disabled')"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.32.2/lib/msal-browser.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Segoe UI,system-ui,sans-serif;background:#f0f2f5;min-height:100vh;color:#1a1a1a}
 .login-outer{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
-.login-card{background:#fff;border-radius:12px;border:1px solid #e4e4e4;padding:2rem;width:100%;max-width:400px}
+.login-card{background:#fff;border-radius:12px;border:1px solid #e4e4e4;padding:2rem;width:100%;max-width:420px}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px}
 .logo{width:36px;height:36px;background:#0078d4;border-radius:9px;display:flex;align-items:center;justify-content:center}
 .brand-name{font-size:16px;font-weight:700}
@@ -29,9 +30,9 @@ body{font-family:Segoe UI,system-ui,sans-serif;background:#f0f2f5;min-height:100
 .topbar-left{display:flex;align-items:center;gap:9px}
 .app-title{font-size:15px;font-weight:700}
 .pill{font-size:11px;padding:2px 10px;border-radius:20px;font-weight:600;border:1px solid}
-.pill.blue{background:#e3f0fc;color:#004f9e;border-color:#b3d4f5}
-.pill.green{background:#dff6dd;color:#0b5a0b;border-color:#9fd89f}
-.sync-row{display:flex;align-items:center;gap:6px;font-size:11px;color:#999;cursor:pointer}
+.pill.blue{background:#e3f0fc;border-color:#b3d4f5}
+.pill.green{background:#dff6dd;border-color:#9fd89f}
+.sync-row{display:flex;align-items:center;gap:6px;font-size:11px;color:#999}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc}
 .sync-dot.ok{background:#107c10}
 .sync-dot.err{background:#d13438}
@@ -40,441 +41,468 @@ body{font-family:Segoe UI,system-ui,sans-serif;background:#f0f2f5;min-height:100
 .btn{border:1px solid #d0d0d0;background:#fff;border-radius:7px;padding:5px 13px;font-size:12px;cursor:pointer;color:#333;font-weight:500;font-family:inherit}
 .btn:hover{background:#f4f4f4}
 .btn.blue{background:#0078d4;border-color:#0078d4;color:#fff}
+.btn.blue:hover{background:#006cbd}
 .btn.green{background:#107c10;border-color:#107c10;color:#fff}
 .btn.red{border-color:#d13438;color:#d13438}
-.btn.red:hover{background:#fdf0f0}
-.card{background:#fff;border-radius:10px;border:1px solid #e4e4e4;margin-bottom:12px;overflow:hidden}
-.card-head{padding:10px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:#fafafa}
-.card-title{font-size:13px;font-weight:700;color:#333}
+.btn.ms{background:#fff;border:1px solid #ddd;display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:13px;width:100%;justify-content:center;margin-top:8px;cursor:pointer;font-family:inherit;border-radius:7px}
+.btn.ms:hover{background:#f4f4f4}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
-.stat{background:#fff;border-radius:10px;border:1px solid #e4e4e4;padding:11px 15px}
+.stat{background:#fff;border-radius:10px;padding:10px 15px;border:1px solid #e4e4e4}
 .stat-label{font-size:11px;color:#999;margin-bottom:3px;font-weight:500}
 .stat-value{font-size:22px;font-weight:700}
+.card{background:#fff;border-radius:10px;border:1px solid #e4e4e4;margin-bottom:12px}
+.card-head{padding:10px 16px;font-size:13px;font-weight:700;color:#333;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:#fafafa;border-radius:10px 10px 0 0}
 .poc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:9px;padding:12px 16px 14px}
 .poc-card{border:1px solid #e8e8e8;border-radius:8px;padding:10px 13px}
 .poc-name{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:5px}
 .poc-bar{height:5px;border-radius:3px;background:#eee;margin-top:6px;overflow:hidden}
 .poc-fill{height:100%;border-radius:3px;transition:width .4s}
 .upload-zone{border:2px dashed #c0d8f0;border-radius:8px;padding:18px;text-align:center;cursor:pointer;background:#f8fbff;display:block}
-.upload-zone:hover{border-color:#0078d4;background:#eef6ff}
-.upload-zone p{font-size:12px;color:#666;margin-top:6px;line-height:1.7}
-.filter-bar{display:flex;gap:8px;padding:9px 16px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;align-items:center;background:#fafafa}
-.filter-bar input,.filter-bar select{font-size:12px;padding:5px 9px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#333;font-family:inherit}
-.poc-notice{padding:7px 16px;background:#f0faf0;border-bottom:1px solid #c8e8c8;font-size:12px;color:#1a5c1a;font-weight:600}
-.tbl-wrap{overflow-x:scroll;scrollbar-width:thick;scrollbar-color:#0078d4 #cce0f5;position:relative}
-.tbl-wrap::-webkit-scrollbar{height:16px;display:block}
-.tbl-wrap::-webkit-scrollbar-track{background:#cce0f5}
-.tbl-wrap::-webkit-scrollbar-thumb{background:#0078d4;border-radius:8px;border:3px solid #cce0f5;min-width:60px}
-.tbl-wrap::-webkit-scrollbar-thumb:hover{background:#004f9e}
-table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
-th{text-align:left;font-size:10px;font-weight:700;color:#666;padding:7px 9px;border-bottom:2px solid #e0e0e0;background:#f8f8f8;white-space:nowrap;text-transform:uppercase;position:sticky;top:0;z-index:1}
-th.g{background:#f0faf0;color:#107c10}
-td{padding:6px 9px;border-bottom:1px solid #f5f5f5;vertical-align:middle;white-space:nowrap}
-tr:hover td{background:#fafbff}
-th:nth-child(1),td:nth-child(1){position:sticky;left:0;z-index:3;background:#f8f8f8;border-right:1px solid #ddd;width:36px;max-width:36px}
-th:nth-child(2),td:nth-child(2){position:sticky;left:36px;z-index:3;background:#fff;border-right:2px solid #0078d4;width:200px;max-width:200px;min-width:200px}
-th:nth-child(1){background:#f8f8f8;z-index:4}
-th:nth-child(2){background:#f8f8f8;z-index:4}
-tr:hover td:nth-child(1),tr:hover td:nth-child(2){background:#f0f6ff}
-.mini{font-size:11px;padding:4px 7px;border-radius:5px;border:1px solid #ddd;background:#fff;color:#1a1a1a;cursor:pointer;font-family:inherit}
-.mini:focus{outline:none;border-color:#0078d4}
-.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.upload-zone:hover{background:#f0f6ff}
+.tbl-wrap{overflow-x:auto;padding:0 0 8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:7px 8px;text-align:left;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;border-bottom:2px solid #f0f0f0;white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
+tr:hover td{background:#fafafa}
+.ini{width:22px;height:22px;border-radius:50%;background:#0078d4;color:#fff;font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-right:4px}
+.ini.g{background:#107c10}
+.badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
 .badge.done{background:#dff6dd;color:#107c10}
 .badge.pending{background:#fff4ce;color:#835c00}
-.ini{width:22px;height:22px;border-radius:50%;background:#e3f0fc;color:#004f9e;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-right:4px;vertical-align:middle}
-.ini.g{background:#dff6dd;color:#107c10}
-.save-btn{font-size:10px;padding:3px 9px;border:1px solid #107c10;border-radius:5px;cursor:pointer;background:#f0faf0;color:#107c10;font-weight:700;font-family:inherit}
-.save-btn:hover{background:#dff6dd}
-.del-btn{font-size:10px;padding:3px 7px;border:1px solid #fbb;border-radius:5px;cursor:pointer;background:#fff;color:#c00;font-family:inherit}
-.del-btn:hover{background:#fff0f0}
-.empty-state{text-align:center;padding:3rem;color:#ccc;font-size:13px}
-.toast{position:fixed;bottom:20px;right:20px;background:#111;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:999}
-.toast.show{opacity:1}
+.save-btn{background:#0078d4;color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit}
+.save-btn:hover{background:#006cbd}
+.del-btn{background:#d13438;color:#fff;border:none;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit}
+select.mini{font-size:11px;padding:3px 5px;border-radius:4px;border:1px solid #ddd;background:#fff;font-family:inherit;max-width:140px}
+input.mini{font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid #ddd;background:#fff;font-family:inherit}
+.poc-notice{padding:7px 16px;background:#f0faf0;border-bottom:1px solid #c8e8c8;font-size:12px;color:#1a5c1a;font-weight:600}
+.filter-bar{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-bottom:1px solid #f0f0f0;align-items:center}
+.empty-state{text-align:center;padding:2rem;color:#ccc;font-size:12px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 18px;border-radius:8px;font-size:12px;z-index:9999;display:none;white-space:nowrap}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.8);z-index:9998;display:none;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.overlay-text{font-size:14px;font-weight:600;color:#0078d4}
+.spinner{width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:#0078d4;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
+
 <div id="loginOuter" class="login-outer">
   <div class="login-card">
     <div class="brand">
-      <div class="logo"><svg width="20" height="20" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5" fill="#fff"/><rect x="13" y="3" width="8" height="8" rx="1.5" fill="#fff"/><rect x="3" y="13" width="8" height="8" rx="1.5" fill="#fff"/><rect x="13" y="13" width="8" height="8" rx="1.5" fill="#fff" opacity=".5"/></svg></div>
+      <div class="logo"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:#fff"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></div>
       <div><div class="brand-name">Absence CRM</div><div class="brand-sub">1885 Delivery Services</div></div>
     </div>
-    <div class="field"><label>Your full name</label><input type="text" id="loginName" placeholder="e.g. Zeenath" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div class="field"><label>Role</label>
-      <select id="loginRole" onchange="document.getElementById('pinRow').style.display=this.value==='admin'?'block':'none'">
-        <option value="poc">POC — fill remarks for my riders</option>
-        <option value="admin">Admin — upload and manage all</option>
-      </select>
+    <div id="loginFields">
+      <div class="field">
+        <label>Your Role</label>
+        <select id="loginRole" onchange="togglePinRow()">
+          <option value="poc">POC — fill remarks for my riders</option>
+          <option value="admin">Admin — upload and manage all</option>
+        </select>
+      </div>
+      <div class="field" id="pinRow" style="display:none">
+        <label>Admin PIN</label>
+        <input type="password" id="adminPin" placeholder="Enter PIN">
+      </div>
+      <button class="btn ms" onclick="doLogin()">
+        <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+        Sign in with Microsoft (@1885.ae)
+      </button>
+      <div class="hint">Admin PIN: <strong>1234</strong></div>
     </div>
-    <div class="field" id="pinRow" style="display:none"><label>Admin PIN</label><input type="password" id="adminPin" placeholder="Enter PIN" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <button class="btn blue" style="width:100%;padding:10px;font-size:14px;margin-top:4px" onclick="doLogin()">Sign in</button>
-    <p class="hint">Admin PIN: <strong>1234</strong><br>POC name must match POC column in CSV exactly</p>
+    <div id="loginMsg" style="text-align:center;font-size:12px;color:#666;margin-top:12px;display:none"></div>
   </div>
 </div>
 
 <div id="mainApp" style="display:none">
-<div class="shell">
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="logo" style="width:30px;height:30px"><svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5" fill="#fff"/><rect x="13" y="3" width="8" height="8" rx="1.5" fill="#fff"/><rect x="3" y="13" width="8" height="8" rx="1.5" fill="#fff"/><rect x="13" y="13" width="8" height="8" rx="1.5" fill="#fff" opacity=".5"/></svg></div>
-      <span class="app-title">Absence CRM</span>
-      <span class="pill" id="topPill"></span>
+  <div class="shell">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="logo"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:#fff"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></div>
+        <span class="app-title">Absence CRM</span>
+        <span class="pill blue" id="topPill">User</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div class="sync-row"><span class="sync-dot" id="syncDot"></span><span id="syncMsg">Loading...</span></div>
+        <button class="btn green" id="exportBtn" onclick="exportCSV()" style="display:none">Export CSV</button>
+        <button class="btn blue" id="syncBtn" onclick="syncToOneDrive()" style="display:none">↑ Save to OneDrive</button>
+        <button class="btn" id="refreshBtn" onclick="loadFromOneDrive(true)" style="display:none">↓ Pull Updates</button>
+        <button class="btn" id="backupBtn" onclick="downloadBackup()" style="display:none;border-color:#835c00;color:#835c00">↓ Download Backup</button>
+        <span id="userLabel" style="font-size:11px;color:#999"></span>
+        <button class="btn" onclick="logout()">Sign out</button>
+      </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div class="sync-row" id="syncRow" onclick="connectOneDrive()"><div class="sync-dot" id="syncDot"></div><span id="syncText">Not connected</span></div>
-      <button class="btn green" id="exportBtn" style="display:none" onclick="exportCSV()">Export CSV</button>
-      <button class="btn blue" id="syncGhBtn" onclick="forceSyncGitHub()">&#8593; Sync to GitHub</button>
-      <button class="btn" id="refreshGhBtn" onclick="refreshFromGitHub()" style="display:none">&#8595; Pull POC updates</button>
-      <button class="btn" id="restoreBtn" onclick="downloadBackup()" style="display:none;border-color:#835c00;color:#835c00">&#8659; Download Backup</button>
-      <button class="btn" onclick="logout()">Sign out</button>
-    </div>
-  </div>
 
-  <div id="adminView" style="display:none">
-    <div class="stats" id="adminStats"></div>
-    <div class="card">
-      <div class="card-head"><span class="card-title">POC progress today</span><span id="lastSync" style="font-size:11px;color:#bbb"></span></div>
-      <div class="poc-grid" id="pocGrid"></div>
-    </div>
-    <div class="card">
-      <div class="card-head"><span class="card-title">Upload absent riders CSV</span><button class="btn" onclick="document.getElementById('csvFile').click()">Choose file</button><input type="file" id="csvFile" accept=".csv" style="display:none" onchange="loadCSV(event)"></div>
-      <div style="padding:14px 16px">
-        <label class="upload-zone" for="csvFile">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="margin:0 auto 8px;display:block"><path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="#0078d4" stroke-width="2" stroke-linecap="round"/><rect x="3" y="3" width="18" height="18" rx="3" stroke="#0078d4" stroke-width="1.5"/></svg>
-          <p><strong>Click to upload your daily CSV</strong><br>Columns: Date, Project, Type, POC, Rider name, Passport, Mob, Client Attendance</p>
-        </label>
+    <!-- Admin -->
+    <div id="adminView" style="display:none">
+      <div class="stats" id="adminStats"></div>
+      <div class="card">
+        <div class="card-head">POC progress today <span id="lastSync" style="font-size:10px;color:#bbb;font-weight:400"></span></div>
+        <div class="poc-grid" id="pocGrid"></div>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-head"><span class="card-title">All riders</span><button class="btn red" onclick="clearAll()">Clear all</button></div>
-      <div class="filter-bar">
-        <input type="text" id="aSearch" placeholder="Search name, passport, rider ID..." oninput="renderAdmin()" style="min-width:180px">
-        <select id="aPoc" onchange="renderAdmin()"><option value="">All POCs</option></select>
-        <select id="aCode" onchange="renderAdmin()"><option value="">All codes</option><option>Present</option><option>Absent</option><option>Vacation</option><option>Week Off</option></select>
-        <select id="aStatus" onchange="renderAdmin()"><option value="">All status</option><option value="done">Done</option><option value="pending">Pending</option></select>
-        <input type="date" id="aDate" onchange="renderAdmin()">
-        <button class="btn" onclick="clearAF()">Clear</button>
+      <div class="card">
+        <div class="card-head">
+          Upload absent riders CSV
+          <button class="btn" onclick="document.getElementById('csvFile').click()">Choose file</button>
+          <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="loadCSV(event)">
+        </div>
+        <div style="padding:16px">
+          <label class="upload-zone" for="csvFile">
+            <div style="font-size:28px;margin-bottom:6px">⬆</div>
+            <div style="font-size:13px;font-weight:600;color:#333;margin-bottom:4px">Click to upload your daily CSV</div>
+            <div style="font-size:11px;color:#999">Columns: Date, Project, Type, POC, Rider name, Passport, Mob, Rider ID, Client Attendance</div>
+          </label>
+        </div>
       </div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr>
+      <div class="card">
+        <div class="card-head">All riders <button class="btn red" onclick="clearAll()">Clear all</button></div>
+        <div class="filter-bar">
+          <input type="text" class="mini" id="aSearch" placeholder="Search name, passport, rider ID..." oninput="renderAdmin()" style="min-width:180px">
+          <select class="mini" id="aPoc" onchange="renderAdmin()"><option value="">All POCs</option></select>
+          <select class="mini" id="aCode" onchange="renderAdmin()"><option value="">All codes</option><option>Present</option><option>Absent</option><option>Vacation</option><option>Week Off</option></select>
+          <select class="mini" id="aStatus" onchange="renderAdmin()"><option value="">All status</option><option value="done">Done</option><option value="pending">Pending</option></select>
+          <input type="date" class="mini" id="aDate" onchange="renderAdmin()">
+          <button class="btn" onclick="clearFilters()">Clear</button>
+        </div>
+        <div class="tbl-wrap">
+          <table><thead><tr>
             <th>#</th><th>Rider Name</th><th>Date</th><th>Project</th><th>Type</th><th>POC</th><th>Passport</th><th>Rider ID</th><th>Mobile</th><th>Client</th>
-            <th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th>
-            <th>Updated by</th><th>Status</th><th>Save</th><th>Del</th>
-          </tr></thead>
-          <tbody id="adminTable"></tbody>
-        </table>
-        <div id="adminEmpty" class="empty-state">No riders loaded. Upload your CSV above.</div>
+            <th style="color:#107c10">Code</th><th style="color:#107c10">Subcode</th><th style="color:#107c10">Remarks</th><th>Updated By</th><th>Status</th><th>Save</th><th>Del</th>
+          </tr></thead><tbody id="adminTable"></tbody></table>
+          <div id="adminEmpty" class="empty-state" style="display:none">No riders loaded. Upload your CSV above.</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div id="pocView" style="display:none">
-    <div class="stats" id="pocStats"></div>
-    <div class="card">
-      <div class="card-head"><span class="card-title">Your assigned riders</span></div>
-      <div class="poc-notice" id="pocNotice"></div>
-      <div class="filter-bar">
-        <input type="text" id="pSearch" placeholder="Search name, passport, rider ID..." oninput="renderPoc()" style="min-width:180px">
-        <select id="pStatus" onchange="renderPoc()"><option value="">All</option><option value="done">Done</option><option value="pending">Pending</option></select>
-        <button class="btn" onclick="document.getElementById('pSearch').value='';document.getElementById('pStatus').value='';renderPoc()">Clear</button>
-      </div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr>
+    <!-- POC -->
+    <div id="pocView" style="display:none">
+      <div class="stats" id="pocStats"></div>
+      <div class="card">
+        <div class="poc-notice" id="pocNotice"></div>
+        <div class="filter-bar">
+          <input type="text" class="mini" id="pSearch" placeholder="Search name, passport, rider ID..." oninput="renderPoc()" style="min-width:180px">
+          <select class="mini" id="pStatus" onchange="renderPoc()"><option value="">All</option><option value="done">Done</option><option value="pending">Pending</option></select>
+          <button class="btn" onclick="document.getElementById('pSearch').value='';document.getElementById('pStatus').value='';renderPoc()">Clear</button>
+        </div>
+        <div class="tbl-wrap">
+          <table><thead><tr>
             <th>#</th><th>Rider Name</th><th>Date</th><th>Project</th><th>Type</th><th>POC</th><th>Passport</th><th>Rider ID</th><th>Mobile</th><th>Client</th>
-            <th class="g">Code</th><th class="g">Subcode</th><th class="g">Remarks</th>
-            <th>Status</th><th>Save</th>
-          </tr></thead>
-          <tbody id="pocTable"></tbody>
-        </table>
-        <div id="pocEmpty" class="empty-state">No riders assigned to you yet.</div>
+            <th style="color:#107c10">Code</th><th style="color:#107c10">Subcode</th><th style="color:#107c10">Remarks</th><th>Status</th><th>Save</th>
+          </tr></thead><tbody id="pocTable"></tbody></table>
+          <div id="pocEmpty" class="empty-state">No riders assigned to you yet.</div>
+        </div>
       </div>
     </div>
   </div>
 </div>
-</div>
+
 <div class="toast" id="toast"></div>
-<script>
-// Clean MSAL redirect params from URL if present
-(function(){
-  const url = window.location.href;
-  if(url.includes('code=') || url.includes('error=') || url.includes('state=')){
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-})();
+<div class="overlay" id="overlay"><div class="spinner"></div><div class="overlay-text" id="overlayText">Saving...</div></div>
 
-const CODE_MAP={'Present':['On Duty'],'Absent':['Absconding','Accident','Bike Issue','Cancelled','COD Issue','Cycle Issue','Defaulter','Family Issue','Financial Issue','Fuel Issue','Left','Health Issue','ID Blocked','Late Login','Moved to Another Project','Not Responding','Resigned','Salary Advance Issue','Shift Issue','Terminated','Weather Issue','Zone Issue','Others'],'Vacation':['Vacation'],'Week Off':['Weekoff']};
-const CODES=Object.keys(CODE_MAP);
-let riders=JSON.parse(localStorage.getItem('crm_final')||'[]');
-let currentUser=null,currentRole=null,msalApp=null,accessToken=null,driveItemId=null;
-function localSave(){try{localStorage.setItem('crm_final',JSON.stringify(riders));}catch(e){}}
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
-function ini(n){return(n||'?').split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);}
-function toast(msg,dur){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur||2500);}
-function setSyncStatus(state,text){document.getElementById('syncDot').className='sync-dot '+(state||'');document.getElementById('syncText').textContent=text;}
-function setLastSync(){const el=document.getElementById('lastSync');if(el)el.textContent='Last sync: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
-function codeDD(id,val){return '<select class="mini" id="c_'+id+'" onchange="onCodeChange(this.dataset.rid)" data-rid="'+id+'" style="width:110px"><option value="">- Code -</option>'+CODES.map(c=>'<option value="'+c+'"'+(c===val?' selected':'')+'>'+c+'</option>').join('')+'</select>';}
-function subDD(id,code,val){const subs=code&&CODE_MAP[code]?CODE_MAP[code]:[];return '<select class="mini" id="s_'+id+'" style="width:155px"'+(subs.length===0?' disabled':'')+'>'+('<option value="">- Subcode -</option>')+subs.map(s=>'<option value="'+s+'"'+(s===val?' selected':'')+'>'+s+'</option>').join('')+'</select>';}
-function onCodeChange(id){const rid=id||this&&this.dataset&&this.dataset.rid;if(!rid)return;const code=document.getElementById('c_'+rid).value;const subs=code&&CODE_MAP[code]?CODE_MAP[code]:[];const el=document.getElementById('s_'+rid);if(!el)return;el.innerHTML='<option value="">- Subcode -</option>'+subs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');el.disabled=subs.length===0;if(subs.length===1)el.value=subs[0];}
-async function saveToGitHub(dataToSave){const finalData=dataToSave||riders;const r=await fetch(KV_API+'/api/riders',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(finalData)});if(!r.ok)throw new Error('KV save failed '+r.status);}
-async function saveBackup(){if(!riders.length)return;try{await fetch(KV_API+'/api/backup',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:riders,savedAt:new Date().toLocaleString('en-IN')})});}catch(e){console.log('Backup failed:',e);}}
-async function downloadBackup(){setSyncStatus('spin','Fetching backup...');try{const r=await fetch(KV_API+'/api/backup');if(r.ok){const b=await r.json();if(b&&b.data&&b.data.length){const fields=['date','projtype','type','poc','ridername','passport','riderid','client','code','subcode','remarks','updatedBy','updatedAt','status'];const labels=['Date','Project','Type','POC','RiderName','Passport','RiderID','ClientAttendance','Code','Subcode','Remarks','UpdatedBy','UpdatedAt','Status'];const rows=b.data.map(r=>fields.map(f=>'"'+(String(r[f]||'').replace(/"/g,'""'))+'"').join(','));const csv=[labels.join(','),...rows].join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='Backup_'+b.savedAt.replace(/[/:, ]/g,'_')+'.csv';a.click();setSyncStatus('ok','Backup downloaded!');toast('Backup downloaded! (Saved at: '+b.savedAt+')');}else{setSyncStatus('err','No backup found');toast('No backup available yet! Backup saves every 1 hour.');}}else{setSyncStatus('err','Backup failed');toast('Could not fetch backup!');}}catch(e){setSyncStatus('err','Backup failed');console.error(e);}}
-async function loadFromGitHub(){try{const r=await fetch(KV_API+'/api/riders?t='+Date.now());if(r.ok){const data=await r.json();if(Array.isArray(data)&&data.length>0){if(riders.length===0){riders=data;localSave();}else{const kvMap={};data.forEach(function(x){if(x.passport)kvMap[x.passport.trim()]=x;});let chg=false;riders=riders.map(function(x){var m=x.passport&&kvMap[x.passport.trim()];if(m&&m.status==='done'&&x.status!=='done'){chg=true;return Object.assign({},x,{code:m.code,subcode:m.subcode,remarks:m.remarks,updatedBy:m.updatedBy,updatedAt:m.updatedAt,status:m.status});}return x;});if(chg)localSave();}return true;}}}catch(e){console.error('KV load error:',e);}return false;}
+<script>
+const CODE_MAP={'Present':['On Duty','Working From Home','Partial Day'],'Absent':['No Show','Sick','Accident','Salary Advance Issue','Emergency','Personal','Bike Issue','Health Issue','Absconding','Terminated','ID Blocked'],'Week Off':['Weekoff'],'Vacation':['Annual Leave','Unpaid Leave'],'Day Off':['Day Off']};
+
+let riders=[];
+let currentUser='';
+let currentRole='';
+let currentEmail='';
+let msalApp=null;
+let accessToken=null;
+let isSaving=false;
+
+// ── MSAL ──
 function initMsal(){
-  if(typeof msal === 'undefined'){
-    setSyncStatus('','Click to connect OneDrive');
-    return;
+  try{
+    msalApp=new msal.PublicClientApplication({
+      auth:{clientId:CLIENT_ID,authority:'https://login.microsoftonline.com/'+TENANT_ID,redirectUri:window.location.origin+window.location.pathname},
+      cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}
+    });
+    msalApp.handleRedirectPromise().then(r=>{if(r&&r.accessToken){accessToken=r.accessToken;currentEmail=r.account.username;currentUser=r.account.name||currentEmail.split('@')[0];completeLogin();}}).catch(e=>console.log(e));
+  }catch(e){console.log('MSAL:',e);}
+}
+
+function togglePinRow(){document.getElementById('pinRow').style.display=document.getElementById('loginRole').value==='admin'?'block':'none';}
+
+async function doLogin(){
+  const role=document.getElementById('loginRole').value;
+  if(role==='admin'&&document.getElementById('adminPin').value!==ADMIN_PIN){alert('Wrong PIN.');return;}
+  currentRole=role;
+  sessionStorage.setItem('crm_role',role);
+  showMsg('Signing in with Microsoft...');
+  try{
+    const scopes=['Files.ReadWrite','User.Read'];
+    const accounts=msalApp.getAllAccounts();
+    let resp;
+    if(accounts.length>0){try{resp=await msalApp.acquireTokenSilent({scopes,account:accounts[0]});}catch(e){resp=await msalApp.acquireTokenPopup({scopes});}}
+    else{resp=await msalApp.acquireTokenPopup({scopes});}
+    accessToken=resp.accessToken;
+    currentEmail=resp.account.username;
+    currentUser=resp.account.name||currentEmail.split('@')[0];
+    completeLogin();
+  }catch(e){console.error(e);showMsg('Login failed. Please try again.');}
+}
+
+function showMsg(m){const el=document.getElementById('loginMsg');el.textContent=m;el.style.display='block';}
+
+async function completeLogin(){
+  if(!currentRole)currentRole=sessionStorage.getItem('crm_role')||'poc';
+  document.getElementById('loginOuter').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  document.getElementById('userLabel').textContent=currentEmail;
+  document.getElementById('topPill').textContent=currentRole==='admin'?'Admin':currentUser;
+  document.getElementById('topPill').className='pill '+(currentRole==='admin'?'blue':'green');
+  if(currentRole==='admin'){
+    ['exportBtn','syncBtn','refreshBtn','backupBtn'].forEach(id=>document.getElementById(id).style.display='inline-block');
+    document.getElementById('adminView').style.display='block';
+  }else{
+    document.getElementById('pocView').style.display='block';
   }
-  try{msalApp=new msal.PublicClientApplication({auth:{clientId:CRM_CONFIG.clientId,authority:'https://login.microsoftonline.com/896fb671-d8c3-4078-96ca-4ee5cc8fbdde',redirectUri:'https://absence-crm.deliveries1885.workers.dev'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});msalApp.handleRedirectPromise().then(resp=>{
-      if(resp&&resp.accessToken){accessToken=resp.accessToken;onConnected();return;}
-      const accts=msalApp.getAllAccounts();
-      if(accts.length>0){
-        msalApp.acquireTokenSilent({account:accts[0],scopes:['Files.ReadWrite']})
-          .then(r=>{accessToken=r.accessToken;onConnected();})
-          .catch(()=>setSyncStatus('','Click to connect OneDrive'));
-      }else{setSyncStatus('','Click to connect OneDrive');}
-    }).catch(e=>{
-      console.log('MSAL redirect handled:',e.message);
-      setSyncStatus('','Click to connect OneDrive');
-    });}catch(e){setSyncStatus('err','MSAL error: '+e.message);}}
-async function connectOneDrive(){if(!msalApp){toast('Not initialized.');return;}if(accessToken){toast('Already connected!');return;}setSyncStatus('spin','Connecting...');try{const r=await msalApp.acquireTokenPopup({scopes:['Files.ReadWrite']});accessToken=r.accessToken;await onConnected();}catch(e){setSyncStatus('err','Sign-in failed');toast('OneDrive sign-in failed.');}}
-async function onConnected(){
+  setSyncStatus('spin','Loading data...');
+  await loadFromOneDrive(false);
+}
+
+// ── OneDrive ──
+async function readFromOneDrive(){
+  const url=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
+  const resp=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+  if(resp.status===404)return null;
+  if(!resp.ok)throw new Error('Read failed: '+resp.status);
+  return await resp.json();
+}
+
+async function writeToOneDrive(data){
+  const url=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
+  const resp=await fetch(url,{method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(!resp.ok)throw new Error('Write failed: '+resp.status);
+  return await resp.json();
+}
+
+async function loadFromOneDrive(showToast){
   setSyncStatus('spin','Loading...');
-  // Load from GitHub first (has latest POC updates), then merge with OneDrive
-  await loadFromOneDrive();
-  setSyncStatus('ok','Connected to OneDrive');
+  try{
+    const data=await readFromOneDrive();
+    if(data&&Array.isArray(data)&&data.length>0){
+      riders=data;
+      localSave();
+      setSyncStatus('ok','Connected');
+      setLastSync();
+      if(showToast)toast('Refreshed! '+riders.length+' riders loaded.');
+    }else{
+      riders=JSON.parse(localStorage.getItem('crm_final')||'[]');
+      setSyncStatus(riders.length?'ok':'','Using local data');
+    }
+  }catch(e){
+    console.error('Load:',e);
+    riders=JSON.parse(localStorage.getItem('crm_final')||'[]');
+    setSyncStatus(riders.length?'ok':'err',riders.length?'Using local data':'Load failed');
+  }
   if(currentRole==='admin')renderAdmin();else renderPoc();
 }
-async function getOrCreateFile(){if(driveItemId)return driveItemId;try{const r=await fetch('https://graph.microsoft.com/v1.0/me/drive/root:/'+CRM_CONFIG.fileName,{headers:{'Authorization':'Bearer '+accessToken}});if(r.ok){const d=await r.json();driveItemId=d.id;return driveItemId;}}catch(e){}const r2=await fetch('https://graph.microsoft.com/v1.0/me/drive/root:/'+CRM_CONFIG.fileName+':/content',{method:'PUT',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:'[]'});const d2=await r2.json();driveItemId=d2.id;return driveItemId;}
-async function saveToOneDrive(){localSave();if(!accessToken)return;setSyncStatus('spin','Saving...');try{const id=await getOrCreateFile();await fetch('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/content',{method:'PUT',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(riders)});setSyncStatus('ok','Saved to OneDrive');setLastSync();try{await saveToGitHub();setSyncStatus('ok','Saved + Synced');}catch(e){console.log('GitHub sync:',e.message);}}catch(e){setSyncStatus('err','Save failed');console.error(e);}}
-async function loadFromOneDrive(){
-  if(!accessToken){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');return;}
+
+async function syncToOneDrive(){
+  if(!riders.length){toast('No data to save!');return;}
+  if(isSaving)return;
+  isSaving=true;
+  showOverlay('Saving to OneDrive...');
+  setSyncStatus('spin','Saving...');
   try{
-    const id=await getOrCreateFile();
-    const r=await fetch('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/content',{headers:{'Authorization':'Bearer '+accessToken}});
-    const text=await r.text();
-    const oneDriveData=text?JSON.parse(text):[];
-    
-    // Also get latest from KV (has POC updates) - merge by passport
-    try{
-      const kvR=await fetch(KV_API+'/api/riders?t='+Date.now());
-      if(kvR.ok){
-        const kvData=await kvR.json();
-        if(Array.isArray(kvData)&&kvData.length>0){
-          const kvMap={};
-          kvData.forEach(r=>{if(r.passport)kvMap[r.passport.trim()]=r;});
-          riders=oneDriveData.map(r=>{
-            const match=r.passport&&kvMap[r.passport.trim()];
-            if(match&&match.code)return{...r,code:match.code,subcode:match.subcode,remarks:match.remarks,updatedBy:match.updatedBy,updatedAt:match.updatedAt,status:match.status};
-            return r;
-          });
-        } else { riders=oneDriveData; }
-      } else { riders=oneDriveData; }
-    } catch(e){ riders=oneDriveData; }
-    
-    localSave();setLastSync();
-  }catch(e){riders=JSON.parse(localStorage.getItem('crm_final')||'[]');}
+    await writeToOneDrive(riders);
+    localSave();
+    setSyncStatus('ok','Saved!');
+    setLastSync();
+    toast('Saved '+riders.length+' riders to OneDrive!');
+  }catch(e){
+    setSyncStatus('err','Save failed');
+    toast('Save failed: '+e.message);
+    console.error(e);
+  }finally{isSaving=false;hideOverlay();}
 }
-async function doLogin(){const name=document.getElementById('loginName').value.trim();const role=document.getElementById('loginRole').value;const pin=document.getElementById('adminPin').value;if(!name){alert('Enter your name.');return;}if(role==='admin'&&pin!==CRM_CONFIG.adminPin){alert('Wrong PIN.');return;}currentUser=name;currentRole=role;document.getElementById('loginOuter').style.display='none';document.getElementById('mainApp').style.display='block';const pill=document.getElementById('topPill');if(role==='admin'){pill.textContent='Admin';pill.className='pill blue';document.getElementById('exportBtn').style.display='inline-block';document.getElementById('refreshGhBtn').style.display='inline-block';document.getElementById('restoreBtn').style.display='inline-block';document.getElementById('adminView').style.display='block';}else{pill.textContent=name;pill.className='pill green';document.getElementById('pocView').style.display='block';}riders=[];if(role==='admin'){
-    renderAdmin();
-    setSyncStatus('spin','Loading...');
-    // Load from localStorage first (most reliable)
-    riders=JSON.parse(localStorage.getItem('crm_final')||'[]');
-    if(riders.length>0){
-      setSyncStatus('ok','Connected');setLastSync();renderAdmin();
-      // Then silently merge any POC updates from KV
-      loadFromGitHub().then(()=>{renderAdmin();});
-    } else {
-      // No local data - load from KV
-      loadFromGitHub().then(ok=>{if(ok){setSyncStatus('ok','Connected');setLastSync();renderAdmin();}else{setSyncStatus('err','Load failed');}});
-    }
-    initMsal();
-    // Auto-backup every 30 minutes
-    setInterval(async()=>{if(currentRole==='admin'&&riders.length){await saveBackup();console.log('Auto-backup saved at '+new Date().toLocaleTimeString());}},60*60*1000);
-    // Auto-pull POC updates every 90 seconds from KV
-    setInterval(async()=>{
-      if(currentRole==='admin'){
-        try{
-          const r=await fetch(KV_API+'/api/riders?t='+Date.now());
-          if(r.ok){
-            const kvData=await r.json();
-            if(Array.isArray(kvData)&&kvData.length>0){
-              // Build map by passport (works even if _id differs)
-              const kvMap={};
-              kvData.forEach(r=>{if(r.passport)kvMap[r.passport.trim()]=r;});
-              let changed=false;
-              riders=riders.map(r=>{
-                const match=r.passport&&kvMap[r.passport.trim()];
-                if(match&&(match.code!==r.code||match.remarks!==r.remarks)){
-                  changed=true;
-                  return{...r,code:match.code,subcode:match.subcode,remarks:match.remarks,updatedBy:match.updatedBy,updatedAt:match.updatedAt,status:match.status};
-                }
-                return r;
-              });
-              if(changed){localSave();renderAdmin();toast('POC updates received!');}
-            }
-          }
-        }catch(e){}
+
+// POC saves one rider - read latest → update → write back
+async function saveSingleRider(rider){
+  if(isSaving){toast('Please wait, saving...');return false;}
+  isSaving=true;
+  setSyncStatus('spin','Saving...');
+  try{
+    // Read latest from OneDrive to avoid conflicts
+    let latest=await readFromOneDrive();
+    if(!latest||!latest.length){latest=riders;}
+    // Update the specific rider by passport
+    let found=false;
+    latest=latest.map(r=>{
+      if(r.passport&&rider.passport&&r.passport.trim()===rider.passport.trim()){
+        found=true;
+        return Object.assign({},r,{code:rider.code,subcode:rider.subcode,remarks:rider.remarks,updatedBy:rider.updatedBy,updatedAt:rider.updatedAt,status:'done'});
       }
-    },90000);
-  }else{
-    // POC: Load full rider list from KV, then apply any local saved progress
-    setSyncStatus('spin','Loading data...');
-    try{
-      const kvResp=await fetch(KV_API+'/api/riders?t='+Date.now());
-      if(kvResp.ok){
-        const kvData=await kvResp.json();
-        if(Array.isArray(kvData)&&kvData.length>0){
-          riders=kvData;
-          // Apply any locally saved POC progress on top
-          const savedPoc=localStorage.getItem('crm_poc_'+name.toLowerCase());
-          if(savedPoc){
-            try{
-              const saved=JSON.parse(savedPoc);
-              const savedMap={};
-              saved.forEach(r=>{if(r.status==='done'&&r.passport)savedMap[r.passport.trim()]=r;});
-              riders=riders.map(r=>{
-                const m=r.passport&&savedMap[r.passport.trim()];
-                return m?Object.assign({},r,{code:m.code,subcode:m.subcode,remarks:m.remarks,updatedBy:m.updatedBy,updatedAt:m.updatedAt,status:m.status}):r;
-              });
-            }catch(e){}
-          }
-          localSave();
-          setSyncStatus('ok','Data loaded');setLastSync();renderPoc();
-        }else{setSyncStatus('','Using local data');renderPoc();}
-      }else{setSyncStatus('','Using local data');renderPoc();}
-    }catch(e){setSyncStatus('','Using local data');renderPoc();}
-  }}
-function logout(){
-  // Save current state before logout so POC doesn't lose progress
-  if(currentUser && currentRole==='poc'){
-    localStorage.setItem('crm_poc_'+currentUser.toLowerCase(), JSON.stringify(riders));
+      return r;
+    });
+    if(!found){toast('Rider not found in OneDrive!');isSaving=false;return false;}
+    // Write back full file
+    await writeToOneDrive(latest);
+    riders=latest;
+    localSave();
+    setSyncStatus('ok','Saved!');
+    setLastSync();
+    isSaving=false;
+    return true;
+  }catch(e){
+    setSyncStatus('err','Save failed');
+    toast('Save failed: '+e.message);
+    console.error(e);
+    isSaving=false;
+    return false;
   }
-  currentUser=null;currentRole=null;accessToken=null;driveItemId=null;
-  document.getElementById('mainApp').style.display='none';
-  document.getElementById('loginOuter').style.display='flex';
-  document.getElementById('adminView').style.display='none';
-  document.getElementById('pocView').style.display='none';
-  document.getElementById('exportBtn').style.display='none';
-  document.getElementById('refreshGhBtn').style.display='none';document.getElementById('restoreBtn').style.display='none';
-  document.getElementById('loginName').value='';
-  document.getElementById('adminPin').value='';
-  document.getElementById('loginRole').value='poc';
-  document.getElementById('pinRow').style.display='none';
 }
-function fc(h,kws){for(const kw of kws){const i=h.findIndex(x=>x.toLowerCase().replace(/[\s_]/g,'').includes(kw.toLowerCase()));if(i>=0)return i;}return -1;}
-function gv(cols,i){return i>=0&&cols[i]?cols[i].trim().replace(/^"|"$/g,''):''}
-function loadCSV(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async function(ev){const lines=ev.target.result.split('\n').filter(l=>l.trim());if(lines.length<2){alert('CSV is empty.');return;}const h=lines[0].split(',').map(x=>x.trim().replace(/^"|"$/g,''));const ci={date:fc(h,['date']),projtype:fc(h,['project','projecttype']),type:fc(h,['type']),poc:fc(h,['poc','pocname']),ridername:fc(h,['ridername','rider']),passport:fc(h,['passport']),mob:fc(h,['mob','mobile']),client:fc(h,['clientattendance','client']),riderid:fc(h,['riderid','rider id','rider_id','riderno','rideridno'])};
-// Parse new CSV rows
-const newRiders=[];
-lines.slice(1).forEach(line=>{if(!line.trim())return;const cols=line.split(',');newRiders.push({_id:uid(),date:gv(cols,ci.date)||new Date().toISOString().slice(0,10),projtype:gv(cols,ci.projtype),type:gv(cols,ci.type),poc:gv(cols,ci.poc)||gv(cols,0),ridername:gv(cols,ci.ridername),passport:gv(cols,ci.passport),riderid:gv(cols,ci.riderid),mob:gv(cols,ci.mob),client:gv(cols,ci.client),code:'',subcode:'',remarks:'',updatedBy:'',updatedAt:'',status:'pending'});});
-setSyncStatus('spin','Loading...');
-// Fetch existing KV data first - preserve any done/updated riders
-let kvDoneMap={};
-try{
-  const kvR=await fetch(KV_API+'/api/riders?t='+Date.now());
-  if(kvR.ok){const kvData=await kvR.json();if(Array.isArray(kvData)){kvData.forEach(r=>{if(r.passport&&r.status==='done')kvDoneMap[r.passport.trim()]=r;});}}
-}catch(e){console.log('KV fetch skipped:',e);}
-// Merge: for each new CSV rider, keep POC updates if already done
-const merged=newRiders.map(r=>{const done=r.passport&&kvDoneMap[r.passport.trim()];if(done)return{...r,code:done.code,subcode:done.subcode,remarks:done.remarks,updatedBy:done.updatedBy,updatedAt:done.updatedAt,status:done.status};return r;});
-riders=merged;
-const preserved=Object.keys(kvDoneMap).length;
-localSave();
-try{await saveToGitHub();setSyncStatus('ok','Saved!');setLastSync();toast(riders.length+' riders loaded! ('+preserved+' POC updates preserved)');}catch(err){setSyncStatus('err','Save failed '+err.message);}
-renderAdmin();e.target.value='';};reader.readAsText(file);}
-function renderStats(el,list){const total=list.length,done=list.filter(r=>r.status==='done').length,pend=total-done,pct=total?Math.round(done/total*100):0;document.getElementById(el).innerHTML='<div class="stat"><div class="stat-label">Total riders</div><div class="stat-value">'+total+'</div></div><div class="stat"><div class="stat-label">Updated</div><div class="stat-value" style="color:#107c10">'+done+'</div></div><div class="stat"><div class="stat-label">Pending</div><div class="stat-value" style="color:#835c00">'+pend+'</div></div><div class="stat"><div class="stat-label">Completion</div><div class="stat-value" style="color:#0078d4">'+pct+'%</div></div>';}
-function renderPocGrid(){const pocs=[...new Set(riders.map(r=>r.poc).filter(Boolean))].sort();const el=document.getElementById('pocGrid');if(!pocs.length){el.innerHTML='<p style="font-size:12px;color:#bbb;padding-bottom:12px">No riders loaded yet.</p>';return;}el.innerHTML=pocs.map(poc=>{const my=riders.filter(r=>r.poc===poc);const done=my.filter(r=>r.status==='done').length,total=my.length,pct=total?Math.round(done/total*100):0;const col=pct===100?'#107c10':pct>=50?'#0078d4':'#835c00';return '<div class="poc-card"><div class="poc-name"><span class="ini g">'+ini(poc)+'</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+poc+'</span></div><div style="font-size:11px;font-weight:700;color:'+col+'">'+done+'/'+total+' - '+pct+'%</div><div class="poc-bar"><div class="poc-fill" style="width:'+pct+'%;background:'+col+'"></div></div></div>';}).join('');}
-function clearAF(){['aSearch','aPoc','aCode','aStatus','aDate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});renderAdmin();}
-function renderAdmin(){renderStats('adminStats',riders);renderPocGrid();const q=document.getElementById('aSearch').value.toLowerCase();const poc=document.getElementById('aPoc').value;const code=document.getElementById('aCode').value;const st=document.getElementById('aStatus').value;const dt=document.getElementById('aDate').value;let list=riders;if(poc)list=list.filter(r=>r.poc===poc);if(code)list=list.filter(r=>r.code===code);if(st)list=list.filter(r=>r.status===st);if(dt)list=list.filter(r=>r.date===dt);if(q)list=list.filter(r=>((r.ridername||'')+(r.passport||'')+(r.riderid||'')).toLowerCase().includes(q));const pocs=[...new Set(riders.map(r=>r.poc).filter(Boolean))].sort();const pf=document.getElementById('aPoc'),cp=pf.value;pf.innerHTML='<option value="">All POCs</option>'+pocs.map(p=>'<option value="'+p+'"'+(p===cp?' selected':'')+'>'+p+'</option>').join('');const tbody=document.getElementById('adminTable'),empty=document.getElementById('adminEmpty');if(!list.length){tbody.innerHTML='';empty.style.display='block';return;}empty.style.display='none';tbody.innerHTML=list.map((r,i)=>'<tr><td style="color:#bbb;font-size:10px">'+(i+1)+'</td><td style="font-weight:600">'+(r.ridername||'--')+'</td><td>'+(r.date||'--')+'</td><td>'+(r.projtype||'--')+'</td><td>'+(r.type||'--')+'</td><td><span class="ini g">'+ini(r.poc)+'</span>'+(r.poc||'--')+'</td><td style="font-family:Consolas,monospace;font-size:11px">'+(r.passport||'--')+'</td><td style="font-family:Consolas,monospace;font-size:11px">'+(r.riderid||'--')+'</td><td>'+(r.mob||'--')+'</td><td>'+(r.client||'--')+'</td><td style="background:rgba(220,255,220,.35)">'+codeDD(r._id,r.code)+'</td><td style="background:rgba(220,255,220,.35)">'+subDD(r._id,r.code,r.subcode)+'</td><td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_'+r._id+'" value="'+(r.remarks||'')+'" placeholder="Remarks..." style="width:150px"></td><td style="font-size:11px;color:#999">'+(r.updatedBy?'<span class="ini" style="width:19px;height:19px;font-size:8px">'+ini(r.updatedBy)+'</span>'+r.updatedBy:'--')+'</td><td><span class="badge '+(r.status==='done'?'done':'pending')+'">'+(r.status==='done'?'Done':'Pending')+'</span></td><td><button class="save-btn" onclick="saveRow(\''+r._id+'\')">Save</button></td><td><button class="del-btn" onclick="delRow(\''+r._id+'\')">Del</button></td></tr>').join('');}
-function renderPoc(){const myRiders=riders.filter(r=>r.poc&&r.poc.toLowerCase().trim()===currentUser.toLowerCase().trim());renderStats('pocStats',myRiders);const done=myRiders.filter(r=>r.status==='done').length;const pn=document.getElementById('pocNotice');if(pn)pn.innerHTML='Riders assigned to <strong>'+currentUser+'</strong> | '+done+' of '+myRiders.length+' updated';const q=document.getElementById('pSearch').value.toLowerCase();const st=document.getElementById('pStatus').value;let list=myRiders;if(st)list=list.filter(r=>r.status===st);if(q)list=list.filter(r=>((r.ridername||'')+(r.passport||'')+(r.riderid||'')).toLowerCase().includes(q));const tbody=document.getElementById('pocTable'),empty=document.getElementById('pocEmpty');if(!tbody)return;if(!myRiders.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}if(empty)empty.style.display='none';if(!list.length){tbody.innerHTML='<tr><td colspan="14" style="text-align:center;padding:2rem;color:#ccc;font-size:12px">No riders match filter.</td></tr>';return;}tbody.innerHTML=list.map((r,i)=>'<tr><td style="color:#bbb;font-size:10px">'+(i+1)+'</td><td style="font-weight:600">'+(r.ridername||'--')+'</td><td>'+(r.date||'--')+'</td><td>'+(r.projtype||'--')+'</td><td>'+(r.type||'--')+'</td><td>'+(r.poc||'--')+'</td><td style="font-family:Consolas,monospace;font-size:11px">'+(r.passport||'--')+'</td><td style="font-family:Consolas,monospace;font-size:11px">'+(r.riderid||'--')+'</td><td>'+(r.mob||'--')+'</td><td>'+(r.client||'--')+'</td><td style="background:rgba(220,255,220,.35)">'+codeDD(r._id,r.code)+'</td><td style="background:rgba(220,255,220,.35)">'+subDD(r._id,r.code,r.subcode)+'</td><td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_'+r._id+'" value="'+(r.remarks||'')+'" placeholder="Remarks..." style="width:150px"></td><td><span class="badge '+(r.status==='done'?'done':'pending')+'">'+(r.status==='done'?'Done':'Pending')+'</span></td><td><button class="save-btn" onclick="saveRow(\''+r._id+'\')">Save</button></td></tr>').join('');}
+
+// ── Helpers ──
+function uid(){return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function ini(n){return(n||'?').split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);}
+function localSave(){try{localStorage.setItem('crm_final',JSON.stringify(riders));}catch(e){}}
+function setSyncStatus(type,msg){const d=document.getElementById('syncDot'),m=document.getElementById('syncMsg');if(!d)return;d.className='sync-dot'+(type==='ok'?' ok':type==='err'?' err':type==='spin'?' spin':'');m.textContent=msg;}
+function setLastSync(){const el=document.getElementById('lastSync');if(el)el.textContent='Last sync: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
+function toast(msg,dur=3000){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',dur);}
+function showOverlay(msg){const o=document.getElementById('overlay');document.getElementById('overlayText').textContent=msg;o.style.display='flex';}
+function hideOverlay(){document.getElementById('overlay').style.display='none';}
+function fc(h,keys){for(const k of keys){const i=h.findIndex(x=>x.toLowerCase().replace(/\s/g,'').includes(k.toLowerCase().replace(/\s/g,'')));if(i>=0)return i;}return -1;}
+function gv(cols,i){if(i<0||i>=cols.length)return'';return cols[i].trim().replace(/^"|"$/g,'');}
+function clearFilters(){document.getElementById('aSearch').value='';document.getElementById('aPoc').value='';document.getElementById('aCode').value='';document.getElementById('aStatus').value='';document.getElementById('aDate').value='';renderAdmin();}
+
+// ── CSV Upload ──
+function loadCSV(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async function(ev){
+    const lines=ev.target.result.split('\n').filter(l=>l.trim());
+    if(lines.length<2){alert('CSV is empty.');return;}
+    const h=lines[0].split(',').map(x=>x.trim().replace(/^"|"$/g,''));
+    const ci={date:fc(h,['date']),projtype:fc(h,['project','projecttype']),type:fc(h,['type']),poc:fc(h,['poc','pocname']),ridername:fc(h,['ridername','rider']),passport:fc(h,['passport']),mob:fc(h,['mob','mobile']),client:fc(h,['clientattendance','client']),riderid:fc(h,['riderid','rider id','rider_id','riderno'])};
+    const newRiders=[];
+    lines.slice(1).forEach(line=>{
+      if(!line.trim())return;
+      const cols=line.split(',');
+      newRiders.push({_id:uid(),date:gv(cols,ci.date)||new Date().toISOString().slice(0,10),projtype:gv(cols,ci.projtype),type:gv(cols,ci.type),poc:gv(cols,ci.poc)||gv(cols,0),ridername:gv(cols,ci.ridername),passport:gv(cols,ci.passport),riderid:gv(cols,ci.riderid),mob:gv(cols,ci.mob),client:gv(cols,ci.client),code:'',subcode:'',remarks:'',updatedBy:'',updatedAt:'',status:'pending'});
+    });
+    // Preserve existing done data
+    const doneMap={};
+    riders.forEach(r=>{if(r.passport&&r.status==='done')doneMap[r.passport.trim()]=r;});
+    riders=newRiders.map(r=>{const done=r.passport&&doneMap[r.passport.trim()];return done?Object.assign({},r,{code:done.code,subcode:done.subcode,remarks:done.remarks,updatedBy:done.updatedBy,updatedAt:done.updatedAt,status:done.status}):r;});
+    const preserved=Object.keys(doneMap).length;
+    localSave();
+    renderAdmin();
+    toast(riders.length+' riders loaded'+(preserved?' ('+preserved+' updates preserved)':'')+'!');
+    await syncToOneDrive();
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ── Render ──
+function renderStats(elId,list){
+  const done=list.filter(r=>r.status==='done').length,pct=list.length?Math.round(done/list.length*100):0;
+  document.getElementById(elId).innerHTML=`<div class="stat"><div class="stat-label">Total riders</div><div class="stat-value">${list.length}</div></div><div class="stat"><div class="stat-label">Updated</div><div class="stat-value" style="color:#107c10">${done}</div></div><div class="stat"><div class="stat-label">Pending</div><div class="stat-value" style="color:#835c00">${list.length-done}</div></div><div class="stat"><div class="stat-label">Completion</div><div class="stat-value" style="color:#0078d4">${pct}%</div></div>`;
+}
+
+function renderPocGrid(){
+  const pocs=[...new Set(riders.map(r=>r.poc).filter(Boolean))].sort();
+  const el=document.getElementById('pocGrid');
+  if(!pocs.length){el.innerHTML='<p style="font-size:12px;color:#bbb;padding-bottom:12px">No riders loaded yet.</p>';return;}
+  el.innerHTML=pocs.map(poc=>{const my=riders.filter(r=>r.poc===poc);const done=my.filter(r=>r.status==='done').length,total=my.length,pct=total?Math.round(done/total*100):0;const col=pct===100?'#107c10':pct>=50?'#0078d4':'#835c00';return`<div class="poc-card"><div class="poc-name"><span class="ini g">${ini(poc)}</span><span>${poc}</span></div><div style="font-size:11px;font-weight:700;color:${col}">${done}/${total} - ${pct}%</div><div class="poc-bar"><div class="poc-fill" style="width:${pct}%;background:${col}"></div></div></div>`;}).join('');
+}
+
+function codeDD(id,val){return`<select class="mini" id="c_${id}" onchange="updateSub('${id}')">${['','Present','Absent','Week Off','Vacation','Day Off'].map(c=>`<option${c===val?' selected':''}>${c||'- Code -'}</option>`).join('')}</select>`;}
+function subDD(id,code,val){const opts=CODE_MAP[code]||[];return`<select class="mini" id="s_${id}">${['- Subcode -',...opts].map(s=>`<option${s===val?' selected':''}>${s}</option>`).join('')}</select>`;}
+function updateSub(id){const code=document.getElementById('c_'+id).value;const el=document.getElementById('s_'+id);if(!el)return;const opts=CODE_MAP[code]||[];el.innerHTML=['- Subcode -',...opts].map(s=>`<option>${s}</option>`).join('');}
+
+function renderAdmin(){
+  renderStats('adminStats',riders);renderPocGrid();
+  const q=document.getElementById('aSearch').value.toLowerCase();
+  const poc=document.getElementById('aPoc').value,code=document.getElementById('aCode').value,st=document.getElementById('aStatus').value,dt=document.getElementById('aDate').value;
+  let list=riders;
+  if(poc)list=list.filter(r=>r.poc===poc);if(code)list=list.filter(r=>r.code===code);if(st)list=list.filter(r=>r.status===st);if(dt)list=list.filter(r=>r.date===dt);if(q)list=list.filter(r=>((r.ridername||'')+(r.passport||'')+(r.riderid||'')).toLowerCase().includes(q));
+  const pocs=[...new Set(riders.map(r=>r.poc).filter(Boolean))].sort();
+  const pf=document.getElementById('aPoc'),cp=pf.value;pf.innerHTML='<option value="">All POCs</option>'+pocs.map(p=>`<option value="${p}"${p===cp?' selected':''}>${p}</option>`).join('');
+  const tbody=document.getElementById('adminTable'),empty=document.getElementById('adminEmpty');
+  if(!list.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=list.map((r,i)=>`<tr><td style="color:#bbb;font-size:10px">${i+1}</td><td style="font-weight:600">${r.ridername||'--'}</td><td>${r.date||'--'}</td><td>${r.projtype||'--'}</td><td>${r.type||'--'}</td><td><span class="ini g">${ini(r.poc)}</span>${r.poc||'--'}</td><td style="font-family:Consolas,monospace;font-size:11px">${r.passport||'--'}</td><td style="font-family:Consolas,monospace;font-size:11px">${r.riderid||'--'}</td><td>${r.mob||'--'}</td><td>${r.client||'--'}</td><td style="background:rgba(220,255,220,.35)">${codeDD(r._id,r.code)}</td><td style="background:rgba(220,255,220,.35)">${subDD(r._id,r.code,r.subcode)}</td><td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_${r._id}" value="${r.remarks||''}" placeholder="Remarks..." style="width:150px"></td><td style="font-size:11px;color:#999">${r.updatedBy?`<span class="ini" style="width:19px;height:19px;font-size:8px">${ini(r.updatedBy)}</span>${r.updatedBy}`:'--'}</td><td><span class="badge ${r.status==='done'?'done':'pending'}">${r.status==='done'?'Done':'Pending'}</span></td><td><button class="save-btn" onclick="saveRow('${r._id}')">Save</button></td><td><button class="del-btn" onclick="delRow('${r._id}')">Del</button></td></tr>`).join('');
+}
+
+function renderPoc(){
+  const myRiders=riders.filter(r=>r.poc&&r.poc.toLowerCase().trim()===currentUser.toLowerCase().trim());
+  renderStats('pocStats',myRiders);
+  const done=myRiders.filter(r=>r.status==='done').length;
+  const pn=document.getElementById('pocNotice');if(pn)pn.innerHTML=`Riders assigned to <strong>${currentUser}</strong> | ${done} of ${myRiders.length} updated`;
+  const q=document.getElementById('pSearch').value.toLowerCase(),st=document.getElementById('pStatus').value;
+  let list=myRiders;if(st)list=list.filter(r=>r.status===st);if(q)list=list.filter(r=>((r.ridername||'')+(r.passport||'')+(r.riderid||'')).toLowerCase().includes(q));
+  const tbody=document.getElementById('pocTable'),empty=document.getElementById('pocEmpty');
+  if(!tbody)return;
+  if(!myRiders.length){tbody.innerHTML='';if(empty)empty.style.display='block';return;}
+  if(empty)empty.style.display='none';
+  if(!list.length){tbody.innerHTML='<tr><td colspan="15" style="text-align:center;padding:2rem;color:#ccc;font-size:12px">No riders match filter.</td></tr>';return;}
+  tbody.innerHTML=list.map((r,i)=>`<tr><td style="color:#bbb;font-size:10px">${i+1}</td><td style="font-weight:600">${r.ridername||'--'}</td><td>${r.date||'--'}</td><td>${r.projtype||'--'}</td><td>${r.type||'--'}</td><td>${r.poc||'--'}</td><td style="font-family:Consolas,monospace;font-size:11px">${r.passport||'--'}</td><td style="font-family:Consolas,monospace;font-size:11px">${r.riderid||'--'}</td><td>${r.mob||'--'}</td><td>${r.client||'--'}</td><td style="background:rgba(220,255,220,.35)">${codeDD(r._id,r.code)}</td><td style="background:rgba(220,255,220,.35)">${subDD(r._id,r.code,r.subcode)}</td><td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_${r._id}" value="${r.remarks||''}" placeholder="Remarks..." style="width:150px"></td><td><span class="badge ${r.status==='done'?'done':'pending'}">${r.status==='done'?'Done':'Pending'}</span></td><td><button class="save-btn" onclick="saveRow('${r._id}')">Save</button></td></tr>`).join('');
+}
+
+// ── Actions ──
 async function saveRow(id){
-  const r=riders.find(x=>x._id===id);
-  if(!r)return;
+  const r=riders.find(x=>x._id===id);if(!r)return;
   const code=(document.getElementById('c_'+id)||{}).value||'';
   const sub=(document.getElementById('s_'+id)||{}).value||'';
   if(!code){toast('Please select a Code.');return;}
-  if(CODE_MAP[code]&&CODE_MAP[code].length>0&&!sub){toast('Please select a Subcode.');return;}
-  r.code=code;r.subcode=sub;
+  if(CODE_MAP[code]&&CODE_MAP[code].length>0&&(!sub||sub==='- Subcode -')){toast('Please select a Subcode.');return;}
+  r.code=code;r.subcode=sub==='- Subcode -'?'':sub;
   r.remarks=(document.getElementById('rem_'+id)||{}).value||'';
-  r.updatedBy=currentUser;
-  r.updatedAt=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  r.status='done';
-  if(currentRole==='poc'){
-    localSave();
-    setSyncStatus('spin','Saving...');
+  r.updatedBy=currentUser;r.updatedAt=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});r.status='done';
+  const ok=await saveSingleRider(r);
+  if(ok){toast('Saved!');if(currentRole==='admin')renderAdmin();else renderPoc();}
+}
+
+async function delRow(id){if(!confirm('Remove this rider?'))return;riders=riders.filter(x=>x._id!==id);localSave();await syncToOneDrive();renderAdmin();}
+
+async function clearAll(){
+  if(!confirm('⚠️ WARNING: This will delete ALL rider data!\n\nMake sure you exported the CSV first.\n\nClick OK to continue...'))return;
+  if(!confirm('Are you 100% sure? This CANNOT be undone!'))return;
+  riders=[];localSave();await syncToOneDrive();renderAdmin();toast('All data cleared!');
+}
+
+function exportCSV(){
+  const fields=['date','projtype','type','poc','ridername','passport','riderid','mob','client','code','subcode','remarks','updatedBy','updatedAt','status'];
+  const labels=['Date','Project','Type','POC','RiderName','Passport','RiderID','Mobile','ClientAttendance','Code','Subcode','Remarks','UpdatedBy','UpdatedAt','Status'];
+  const rows=riders.map(r=>fields.map(f=>'"'+(String(r[f]||'').replace(/"/g,'""'))+'"').join(','));
+  const csv=[labels.join(','),...rows].join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='AbsenceCRM_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+function downloadBackup(){if(!riders.length){toast('No data!');return;}exportCSV();toast('Backup downloaded!');}
+
+function logout(){
+  currentUser='';currentRole='';accessToken=null;riders=[];
+  sessionStorage.removeItem('crm_role');
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('loginOuter').style.display='flex';
+  document.getElementById('loginMsg').style.display='none';
+  document.getElementById('loginFields').style.display='block';
+  document.getElementById('adminView').style.display='none';
+  document.getElementById('pocView').style.display='none';
+  ['exportBtn','syncBtn','refreshBtn','backupBtn'].forEach(id=>document.getElementById(id).style.display='none');
+  try{const accounts=msalApp.getAllAccounts();if(accounts.length)msalApp.logoutPopup({account:accounts[0]}).catch(()=>{});}catch(e){}
+}
+
+// Auto-refresh every 2 mins for admin
+setInterval(async()=>{
+  if(currentRole==='admin'&&accessToken&&riders.length&&!isSaving){
     try{
-      const res=await fetch(KV_API+'/api/riders/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)});
-      if(!res.ok)throw new Error('Save failed '+res.status);
-      setSyncStatus('ok','Saved!');
-      setLastSync();
-      // Instant backup after every POC save
-      try{
-        const allR=await fetch(KV_API+'/api/riders?t='+Date.now());
-        if(allR.ok){
-          const allData=await allR.json();
-          if(Array.isArray(allData)&&allData.length){
-            await fetch(KV_API+'/api/backup',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:allData,savedAt:new Date().toLocaleString('en-IN')})});
-          }
-        }
-      }catch(be){console.log('Backup error:',be);}
-    }catch(e){setSyncStatus('err','Save failed');console.error(e);}
-    renderPoc();
-  }else{
-    await saveToOneDrive();
-    renderAdmin();
-  }
-  toast('Saved!');
-}
-async function delRow(id){if(!confirm('Remove this rider?'))return;riders=riders.filter(x=>x._id!==id);await saveToOneDrive();renderAdmin();}
-async function clearAll(){if(!confirm('⚠️ WARNING: This will delete ALL rider data!\n\nMake sure you have exported the CSV first.\n\nClick OK to continue...'))return;if(!confirm('Are you 100% sure? This CANNOT be undone!'))return;riders=[];localSave();setSyncStatus('spin','Clearing...');try{const r=await fetch(KV_API+'/api/riders',{method:'DELETE'});if(!r.ok)throw new Error();// Also clear backup
-await fetch(KV_API+'/api/backup',{method:'DELETE'}).catch(()=>{});setSyncStatus('ok','Cleared!');toast('All data deleted!');}catch(e){setSyncStatus('err','Clear failed');}renderAdmin();}
-async function refreshFromGitHub(){
-  if(!riders.length){toast('Please upload CSV first!');return;}
-  setSyncStatus('spin','Pulling POC updates...');
-  try{
-    const r=await fetch(KV_API+'/api/riders?t='+Date.now());
-    if(r.ok){
-      const kvData=await r.json();
-      if(Array.isArray(kvData)&&kvData.length>0){
-        var kvMap={};
-        kvData.forEach(function(x){if(x.passport)kvMap[x.passport.trim()]=x;});
-        var updated=0;
-        riders=riders.map(function(x){
-          var m=x.passport&&kvMap[x.passport.trim()];
-          if(m&&m.status==='done'){
-            updated++;
-            return Object.assign({},x,{code:m.code,subcode:m.subcode,remarks:m.remarks,updatedBy:m.updatedBy,updatedAt:m.updatedAt,status:m.status});
-          }
-          return x;
-        });
-        localSave();
-        setSyncStatus('ok','POC updates pulled!');
-        toast(updated+' riders updated from POCs!');
-        renderAdmin();
-        return;
+      const data=await readFromOneDrive();
+      if(data&&data.length>0){
+        const odMap={};data.forEach(r=>{if(r.passport)odMap[r.passport.trim()]=r;});
+        let changed=false;
+        riders=riders.map(r=>{const m=r.passport&&odMap[r.passport.trim()];if(m&&m.status==='done'&&r.status!=='done'){changed=true;return Object.assign({},r,{code:m.code,subcode:m.subcode,remarks:m.remarks,updatedBy:m.updatedBy,updatedAt:m.updatedAt,status:'done'});}return r;});
+        if(changed){localSave();renderAdmin();toast('POC updates received!');setLastSync();}
       }
-    }
-    setSyncStatus('ok','No updates yet');
-    toast('No POC updates found');
-  }catch(e){setSyncStatus('err','Pull failed');console.error(e);}
-}
-
-async function forceSyncGitHub(){
-  if(!riders.length){ toast('No data to sync!'); return; }
-  setSyncStatus('spin','Syncing to GitHub...');
-  try{
-    await saveToGitHub();
-    setSyncStatus('ok','Synced to GitHub!');
-    toast('Synced! POCs can now refresh to see data.');
-  } catch(e){
-    setSyncStatus('err','Sync failed: '+e.message);
-    toast('GitHub sync failed: '+e.message);
-    console.error(e);
+    }catch(e){}
   }
-}
+},2*60*1000);
 
-function exportCSV(){const fields=['date','projtype','type','poc','ridername','passport','riderid','client','code','subcode','remarks','updatedBy','updatedAt','status'];const labels=['Date','Project','Type','POC','RiderName','Passport','RiderID','ClientAttendance','Code','Subcode','Remarks','UpdatedBy','UpdatedAt','Status'];const rows=riders.map(r=>fields.map(f=>'"'+(String(r[f]||'').replace(/"/g,'""'))+'"').join(','));const csv=[labels.join(','),...rows].join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='AbsenceCRM_'+new Date().toISOString().slice(0,10)+'.csv';a.click();}
+initMsal();
 </script>
 </body>
 </html>
