@@ -9,6 +9,7 @@ const CLIENT_ID='8a033239-ba9e-4731-908b-2d25da6975ad';
 const TENANT_ID='896fb671-d8c3-4078-96ca-4ee5cc8fbdde';
 const ADMIN_PIN='1234';
 const FILE_NAME='RiderAbsenceCRM_Data.json';
+const KV_API='https://crm-api.deliveries1885.workers.dev';
 // Admin's OneDrive - everyone reads/writes from this
 const ADMIN_USER_ID='info_1885_ae';
 const SHAREPOINT_HOST='eightyfivedeliverys-my.sharepoint.com';
@@ -275,46 +276,35 @@ async function completeLogin(){
 
 // Read from admin's OneDrive (shared file)
 async function readSharedFile(){
-  // Use sharing link - works for all org users
-  const sharingUrl='https://eightyfivedeliverys-my.sharepoint.com/:u:/g/personal/info_1885_ae/IQC_lb03KKu8SpIuwsjRRabqAZ52R2Mp9bldaHOL0U6fPQ4';
-  const encoded='u!'+btoa(sharingUrl).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-  const resp=await fetch(`https://graph.microsoft.com/v1.0/shares/${encoded}/root/content`,{
-    headers:{Authorization:'Bearer '+accessToken}
-  });
-  if(resp.ok)return await resp.json();
-  // Fallback: admin reads own file
-  const myUrl=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
-  const myResp=await fetch(myUrl,{headers:{Authorization:'Bearer '+accessToken}});
-  if(myResp.ok)return await myResp.json();
-  if(myResp.status===404)return null;
-  console.error('Read failed:',resp.status, await resp.text().catch(()=>''));
+  // KV is the shared bridge - all users read from here
+  try{
+    const r=await fetch(KV_API+'/api/riders?t='+Date.now());
+    if(r.ok){const d=await r.json();if(Array.isArray(d)&&d.length>0)return d;}
+  }catch(e){console.log('KV read failed:',e);}
+  // Fallback: admin reads from own OneDrive
+  if(currentEmail&&currentEmail.toLowerCase()===('info@1885.ae').toLowerCase()){
+    try{
+      const myUrl=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
+      const myResp=await fetch(myUrl,{headers:{Authorization:'Bearer '+accessToken}});
+      if(myResp.ok)return await myResp.json();
+    }catch(e){}
+  }
   return null;
 }
 
-// Write to admin's OneDrive via sharing link
+// Write to KV (shared bridge) + admin's OneDrive (backup)
 async function writeSharedFile(data){
-  const sharingUrl='https://eightyfivedeliverys-my.sharepoint.com/:u:/g/personal/info_1885_ae/IQC_lb03KKu8SpIuwsjRRabqAZ52R2Mp9bldaHOL0U6fPQ4';
-  const encoded='u!'+btoa(sharingUrl).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-  // Get driveItem from share, then write via drive path
-  const itemResp=await fetch(`https://graph.microsoft.com/v1.0/shares/${encoded}/root`,{
-    headers:{Authorization:'Bearer '+accessToken}
-  });
-  if(itemResp.ok){
-    const item=await itemResp.json();
-    const driveId=item.parentReference&&item.parentReference.driveId;
-    const itemId=item.id;
-    if(driveId&&itemId){
-      const writeResp=await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/content`,{
-        method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(data)
-      });
-      if(writeResp.ok)return await writeResp.json();
-    }
+  // Always write to KV first - accessible by everyone
+  const kvResp=await fetch(KV_API+'/api/riders',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(!kvResp.ok)throw new Error('KV write failed: '+kvResp.status);
+  // Also save to admin's OneDrive if admin is logged in (backup)
+  if(currentEmail&&currentEmail.toLowerCase()===('info@1885.ae').toLowerCase()){
+    try{
+      const url=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
+      await fetch(url,{method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(data)});
+    }catch(e){console.log('OneDrive backup failed:',e);}
   }
-  // Fallback: admin writes to own drive
-  const url=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
-  const resp=await fetch(url,{method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(data)});
-  if(!resp.ok)throw new Error('Write failed: '+resp.status);
-  return await resp.json();
+  return true;
 }
 
 async function loadShared(showToast){
@@ -363,19 +353,16 @@ async function saveSingleRider(rider){
   isSaving=true;
   setSyncStatus('spin','Saving...');
   try{
-    const latest=await readSharedFile();
-    let all=latest||riders;
-    let found=false;
-    all=all.map(r=>{
+    // POC saves individual rider via KV /api/riders/save (atomic update)
+    const saveResp=await fetch(KV_API+'/api/riders/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rider)});
+    if(!saveResp.ok)throw new Error('Save failed: '+saveResp.status);
+    // Update local riders array
+    riders=riders.map(r=>{
       if(r.passport&&rider.passport&&r.passport.trim()===rider.passport.trim()){
-        found=true;
         return Object.assign({},r,{code:rider.code,subcode:rider.subcode,remarks:rider.remarks,updatedBy:rider.updatedBy,updatedAt:rider.updatedAt,status:'done'});
       }
       return r;
     });
-    if(!found){toast('Rider not found!');isSaving=false;return false;}
-    await writeSharedFile(all);
-    riders=all;
     localSave();
     setSyncStatus('ok','Saved!');
     setLastSync();
