@@ -9,6 +9,9 @@ const CLIENT_ID='8a033239-ba9e-4731-908b-2d25da6975ad';
 const TENANT_ID='896fb671-d8c3-4078-96ca-4ee5cc8fbdde';
 const ADMIN_PIN='1234';
 const FILE_NAME='RiderAbsenceCRM_Data.json';
+// Admin's OneDrive - everyone reads/writes from this
+const ADMIN_USER_ID='info_1885_ae';
+const SHAREPOINT_HOST='eightyfivedeliverys-my.sharepoint.com';
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.32.2/lib/msal-browser.min.js"></script>
 <style>
@@ -78,10 +81,10 @@ input.mini{font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid #dd
 .filter-bar{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-bottom:1px solid #f0f0f0;align-items:center}
 .empty-state{text-align:center;padding:2rem;color:#ccc;font-size:12px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 18px;border-radius:8px;font-size:12px;z-index:9999;display:none;white-space:nowrap}
-.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.8);z-index:9998;display:none;align-items:center;justify-content:center;flex-direction:column;gap:8px}
-.overlay-text{font-size:14px;font-weight:600;color:#0078d4}
-.spinner{width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:#0078d4;border-radius:50%;animation:spin .8s linear infinite}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.85);z-index:9998;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.spinner{width:36px;height:36px;border:3px solid #e0e0e0;border-top-color:#0078d4;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.overlay-text{font-size:14px;font-weight:600;color:#0078d4}
 </style>
 </head>
 <body>
@@ -125,15 +128,14 @@ input.mini{font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid #dd
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <div class="sync-row"><span class="sync-dot" id="syncDot"></span><span id="syncMsg">Loading...</span></div>
         <button class="btn green" id="exportBtn" onclick="exportCSV()" style="display:none">Export CSV</button>
-        <button class="btn blue" id="syncBtn" onclick="syncToOneDrive()" style="display:none">↑ Save to OneDrive</button>
-        <button class="btn" id="refreshBtn" onclick="loadFromOneDrive(true)" style="display:none">↓ Pull Updates</button>
+        <button class="btn blue" id="syncBtn" onclick="saveToShared()" style="display:none">↑ Save to OneDrive</button>
+        <button class="btn" id="refreshBtn" onclick="loadShared(true)" style="display:none">↓ Pull Updates</button>
         <button class="btn" id="backupBtn" onclick="downloadBackup()" style="display:none;border-color:#835c00;color:#835c00">↓ Download Backup</button>
         <span id="userLabel" style="font-size:11px;color:#999"></span>
         <button class="btn" onclick="logout()">Sign out</button>
       </div>
     </div>
 
-    <!-- Admin -->
     <div id="adminView" style="display:none">
       <div class="stats" id="adminStats"></div>
       <div class="card">
@@ -174,7 +176,6 @@ input.mini{font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid #dd
       </div>
     </div>
 
-    <!-- POC -->
     <div id="pocView" style="display:none">
       <div class="stats" id="pocStats"></div>
       <div class="card">
@@ -210,14 +211,21 @@ let msalApp=null;
 let accessToken=null;
 let isSaving=false;
 
-// ── MSAL ──
+// Shared file URL - points to admin's OneDrive file via Graph API
+function getSharedFileUrl(){
+  // Use Graph API to access admin's OneDrive file directly
+  return `https://graph.microsoft.com/v1.0/users/${ADMIN_USER_ID.replace(/_/g,'.')}.${SHAREPOINT_HOST.split('.')[0].replace('eightyfivedeliverys','1885')}/drive/root:/${FILE_NAME}:/content`;
+}
+
 function initMsal(){
   try{
     msalApp=new msal.PublicClientApplication({
       auth:{clientId:CLIENT_ID,authority:'https://login.microsoftonline.com/'+TENANT_ID,redirectUri:window.location.origin+window.location.pathname},
       cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}
     });
-    msalApp.handleRedirectPromise().then(r=>{if(r&&r.accessToken){accessToken=r.accessToken;currentEmail=r.account.username;currentUser=r.account.name||currentEmail.split('@')[0];completeLogin();}}).catch(e=>console.log(e));
+    msalApp.handleRedirectPromise().then(r=>{
+      if(r&&r.accessToken){accessToken=r.accessToken;currentEmail=r.account.username;currentUser=r.account.name||currentEmail.split('@')[0];completeLogin();}
+    }).catch(e=>console.log(e));
   }catch(e){console.log('MSAL:',e);}
 }
 
@@ -228,13 +236,17 @@ async function doLogin(){
   if(role==='admin'&&document.getElementById('adminPin').value!==ADMIN_PIN){alert('Wrong PIN.');return;}
   currentRole=role;
   sessionStorage.setItem('crm_role',role);
-  showMsg('Signing in with Microsoft...');
+  showMsg('Signing in...');
   try{
-    const scopes=['Files.ReadWrite','User.Read'];
+    const scopes=['Files.ReadWrite','Files.ReadWrite.All','User.Read','Sites.ReadWrite.All'];
     const accounts=msalApp.getAllAccounts();
     let resp;
-    if(accounts.length>0){try{resp=await msalApp.acquireTokenSilent({scopes,account:accounts[0]});}catch(e){resp=await msalApp.acquireTokenPopup({scopes});}}
-    else{resp=await msalApp.acquireTokenPopup({scopes});}
+    if(accounts.length>0){
+      try{resp=await msalApp.acquireTokenSilent({scopes,account:accounts[0]});}
+      catch(e){resp=await msalApp.acquireTokenPopup({scopes});}
+    }else{
+      resp=await msalApp.acquireTokenPopup({scopes});
+    }
     accessToken=resp.accessToken;
     currentEmail=resp.account.username;
     currentUser=resp.account.name||currentEmail.split('@')[0];
@@ -258,29 +270,55 @@ async function completeLogin(){
     document.getElementById('pocView').style.display='block';
   }
   setSyncStatus('spin','Loading data...');
-  await loadFromOneDrive(false);
+  await loadShared(false);
 }
 
-// ── OneDrive ──
-async function readFromOneDrive(){
+// Read from admin's OneDrive (shared file)
+async function readSharedFile(){
+  // Try admin's own file first
   const url=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
-  const resp=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
-  if(resp.status===404)return null;
-  if(!resp.ok)throw new Error('Read failed: '+resp.status);
-  return await resp.json();
+  
+  // If admin is logged in, read their own file
+  if(currentEmail&&currentEmail.toLowerCase().includes('info@')){
+    const resp=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+    if(resp.ok)return await resp.json();
+    if(resp.status===404)return null;
+    throw new Error('Read failed: '+resp.status);
+  }
+  
+  // For POCs - read from shared file using the sharing link token
+  // Use the driveItem sharing URL approach
+  const sharingUrl='https://eightyfivedeliverys-my.sharepoint.com/:u:/g/personal/info_1885_ae/IQC_lb03KKu8SpIuwsjRRabqAZ52R2Mp9bldaHOL0U6fPQ4';
+  const encoded=btoa(sharingUrl).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+  const shareResp=await fetch(`https://graph.microsoft.com/v1.0/shares/u!${encoded}/driveItem/content`,{
+    headers:{Authorization:'Bearer '+accessToken}
+  });
+  if(shareResp.ok)return await shareResp.json();
+  if(shareResp.status===404)return null;
+  throw new Error('Share read failed: '+shareResp.status);
 }
 
-async function writeToOneDrive(data){
-  const url=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
+// Write to admin's OneDrive
+async function writeSharedFile(data){
+  let url;
+  if(currentEmail&&currentEmail.toLowerCase().includes('info@')){
+    // Admin writes to their own file
+    url=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
+  }else{
+    // POC writes via sharing link
+    const sharingUrl='https://eightyfivedeliverys-my.sharepoint.com/:u:/g/personal/info_1885_ae/IQC_lb03KKu8SpIuwsjRRabqAZ52R2Mp9bldaHOL0U6fPQ4';
+    const encoded=btoa(sharingUrl).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+    url=`https://graph.microsoft.com/v1.0/shares/u!${encoded}/driveItem/content`;
+  }
   const resp=await fetch(url,{method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(data)});
-  if(!resp.ok)throw new Error('Write failed: '+resp.status);
+  if(!resp.ok)throw new Error('Write failed: '+resp.status+' '+await resp.text());
   return await resp.json();
 }
 
-async function loadFromOneDrive(showToast){
+async function loadShared(showToast){
   setSyncStatus('spin','Loading...');
   try{
-    const data=await readFromOneDrive();
+    const data=await readSharedFile();
     if(data&&Array.isArray(data)&&data.length>0){
       riders=data;
       localSave();
@@ -292,25 +330,25 @@ async function loadFromOneDrive(showToast){
       setSyncStatus(riders.length?'ok':'','Using local data');
     }
   }catch(e){
-    console.error('Load:',e);
+    console.error('Load error:',e);
     riders=JSON.parse(localStorage.getItem('crm_final')||'[]');
     setSyncStatus(riders.length?'ok':'err',riders.length?'Using local data':'Load failed');
   }
   if(currentRole==='admin')renderAdmin();else renderPoc();
 }
 
-async function syncToOneDrive(){
+async function saveToShared(){
   if(!riders.length){toast('No data to save!');return;}
   if(isSaving)return;
   isSaving=true;
   showOverlay('Saving to OneDrive...');
   setSyncStatus('spin','Saving...');
   try{
-    await writeToOneDrive(riders);
+    await writeSharedFile(riders);
     localSave();
     setSyncStatus('ok','Saved!');
     setLastSync();
-    toast('Saved '+riders.length+' riders to OneDrive!');
+    toast('Saved '+riders.length+' riders!');
   }catch(e){
     setSyncStatus('err','Save failed');
     toast('Save failed: '+e.message);
@@ -318,28 +356,24 @@ async function syncToOneDrive(){
   }finally{isSaving=false;hideOverlay();}
 }
 
-// POC saves one rider - read latest → update → write back
 async function saveSingleRider(rider){
-  if(isSaving){toast('Please wait, saving...');return false;}
+  if(isSaving){toast('Please wait...');return false;}
   isSaving=true;
   setSyncStatus('spin','Saving...');
   try{
-    // Read latest from OneDrive to avoid conflicts
-    let latest=await readFromOneDrive();
-    if(!latest||!latest.length){latest=riders;}
-    // Update the specific rider by passport
+    const latest=await readSharedFile();
+    let all=latest||riders;
     let found=false;
-    latest=latest.map(r=>{
+    all=all.map(r=>{
       if(r.passport&&rider.passport&&r.passport.trim()===rider.passport.trim()){
         found=true;
         return Object.assign({},r,{code:rider.code,subcode:rider.subcode,remarks:rider.remarks,updatedBy:rider.updatedBy,updatedAt:rider.updatedAt,status:'done'});
       }
       return r;
     });
-    if(!found){toast('Rider not found in OneDrive!');isSaving=false;return false;}
-    // Write back full file
-    await writeToOneDrive(latest);
-    riders=latest;
+    if(!found){toast('Rider not found!');isSaving=false;return false;}
+    await writeSharedFile(all);
+    riders=all;
     localSave();
     setSyncStatus('ok','Saved!');
     setLastSync();
@@ -354,20 +388,18 @@ async function saveSingleRider(rider){
   }
 }
 
-// ── Helpers ──
 function uid(){return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function ini(n){return(n||'?').split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);}
 function localSave(){try{localStorage.setItem('crm_final',JSON.stringify(riders));}catch(e){}}
 function setSyncStatus(type,msg){const d=document.getElementById('syncDot'),m=document.getElementById('syncMsg');if(!d)return;d.className='sync-dot'+(type==='ok'?' ok':type==='err'?' err':type==='spin'?' spin':'');m.textContent=msg;}
 function setLastSync(){const el=document.getElementById('lastSync');if(el)el.textContent='Last sync: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
 function toast(msg,dur=3000){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',dur);}
-function showOverlay(msg){const o=document.getElementById('overlay');document.getElementById('overlayText').textContent=msg;o.style.display='flex';}
+function showOverlay(msg){document.getElementById('overlayText').textContent=msg;document.getElementById('overlay').style.display='flex';}
 function hideOverlay(){document.getElementById('overlay').style.display='none';}
 function fc(h,keys){for(const k of keys){const i=h.findIndex(x=>x.toLowerCase().replace(/\s/g,'').includes(k.toLowerCase().replace(/\s/g,'')));if(i>=0)return i;}return -1;}
 function gv(cols,i){if(i<0||i>=cols.length)return'';return cols[i].trim().replace(/^"|"$/g,'');}
 function clearFilters(){document.getElementById('aSearch').value='';document.getElementById('aPoc').value='';document.getElementById('aCode').value='';document.getElementById('aStatus').value='';document.getElementById('aDate').value='';renderAdmin();}
 
-// ── CSV Upload ──
 function loadCSV(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
@@ -382,21 +414,18 @@ function loadCSV(e){
       const cols=line.split(',');
       newRiders.push({_id:uid(),date:gv(cols,ci.date)||new Date().toISOString().slice(0,10),projtype:gv(cols,ci.projtype),type:gv(cols,ci.type),poc:gv(cols,ci.poc)||gv(cols,0),ridername:gv(cols,ci.ridername),passport:gv(cols,ci.passport),riderid:gv(cols,ci.riderid),mob:gv(cols,ci.mob),client:gv(cols,ci.client),code:'',subcode:'',remarks:'',updatedBy:'',updatedAt:'',status:'pending'});
     });
-    // Preserve existing done data
     const doneMap={};
     riders.forEach(r=>{if(r.passport&&r.status==='done')doneMap[r.passport.trim()]=r;});
     riders=newRiders.map(r=>{const done=r.passport&&doneMap[r.passport.trim()];return done?Object.assign({},r,{code:done.code,subcode:done.subcode,remarks:done.remarks,updatedBy:done.updatedBy,updatedAt:done.updatedAt,status:done.status}):r;});
-    const preserved=Object.keys(doneMap).length;
     localSave();
     renderAdmin();
-    toast(riders.length+' riders loaded'+(preserved?' ('+preserved+' updates preserved)':'')+'!');
-    await syncToOneDrive();
+    toast(riders.length+' riders loaded!');
+    await saveToShared();
     e.target.value='';
   };
   reader.readAsText(file);
 }
 
-// ── Render ──
 function renderStats(elId,list){
   const done=list.filter(r=>r.status==='done').length,pct=list.length?Math.round(done/list.length*100):0;
   document.getElementById(elId).innerHTML=`<div class="stat"><div class="stat-label">Total riders</div><div class="stat-value">${list.length}</div></div><div class="stat"><div class="stat-label">Updated</div><div class="stat-value" style="color:#107c10">${done}</div></div><div class="stat"><div class="stat-label">Pending</div><div class="stat-value" style="color:#835c00">${list.length-done}</div></div><div class="stat"><div class="stat-label">Completion</div><div class="stat-value" style="color:#0078d4">${pct}%</div></div>`;
@@ -442,7 +471,6 @@ function renderPoc(){
   tbody.innerHTML=list.map((r,i)=>`<tr><td style="color:#bbb;font-size:10px">${i+1}</td><td style="font-weight:600">${r.ridername||'--'}</td><td>${r.date||'--'}</td><td>${r.projtype||'--'}</td><td>${r.type||'--'}</td><td>${r.poc||'--'}</td><td style="font-family:Consolas,monospace;font-size:11px">${r.passport||'--'}</td><td style="font-family:Consolas,monospace;font-size:11px">${r.riderid||'--'}</td><td>${r.mob||'--'}</td><td>${r.client||'--'}</td><td style="background:rgba(220,255,220,.35)">${codeDD(r._id,r.code)}</td><td style="background:rgba(220,255,220,.35)">${subDD(r._id,r.code,r.subcode)}</td><td style="background:rgba(220,255,220,.35)"><input class="mini" id="rem_${r._id}" value="${r.remarks||''}" placeholder="Remarks..." style="width:150px"></td><td><span class="badge ${r.status==='done'?'done':'pending'}">${r.status==='done'?'Done':'Pending'}</span></td><td><button class="save-btn" onclick="saveRow('${r._id}')">Save</button></td></tr>`).join('');
 }
 
-// ── Actions ──
 async function saveRow(id){
   const r=riders.find(x=>x._id===id);if(!r)return;
   const code=(document.getElementById('c_'+id)||{}).value||'';
@@ -456,12 +484,12 @@ async function saveRow(id){
   if(ok){toast('Saved!');if(currentRole==='admin')renderAdmin();else renderPoc();}
 }
 
-async function delRow(id){if(!confirm('Remove this rider?'))return;riders=riders.filter(x=>x._id!==id);localSave();await syncToOneDrive();renderAdmin();}
+async function delRow(id){if(!confirm('Remove this rider?'))return;riders=riders.filter(x=>x._id!==id);localSave();await saveToShared();renderAdmin();}
 
 async function clearAll(){
-  if(!confirm('⚠️ WARNING: This will delete ALL rider data!\n\nMake sure you exported the CSV first.\n\nClick OK to continue...'))return;
-  if(!confirm('Are you 100% sure? This CANNOT be undone!'))return;
-  riders=[];localSave();await syncToOneDrive();renderAdmin();toast('All data cleared!');
+  if(!confirm('⚠️ WARNING: Delete ALL rider data?\n\nExport CSV first!\n\nClick OK to continue...'))return;
+  if(!confirm('Are you 100% sure? Cannot be undone!'))return;
+  riders=[];localSave();await saveToShared();renderAdmin();toast('All data cleared!');
 }
 
 function exportCSV(){
@@ -487,16 +515,16 @@ function logout(){
   try{const accounts=msalApp.getAllAccounts();if(accounts.length)msalApp.logoutPopup({account:accounts[0]}).catch(()=>{});}catch(e){}
 }
 
-// Auto-refresh every 2 mins for admin
+// Auto refresh every 2 mins
 setInterval(async()=>{
-  if(currentRole==='admin'&&accessToken&&riders.length&&!isSaving){
+  if(accessToken&&riders.length&&!isSaving){
     try{
-      const data=await readFromOneDrive();
+      const data=await readSharedFile();
       if(data&&data.length>0){
         const odMap={};data.forEach(r=>{if(r.passport)odMap[r.passport.trim()]=r;});
         let changed=false;
         riders=riders.map(r=>{const m=r.passport&&odMap[r.passport.trim()];if(m&&m.status==='done'&&r.status!=='done'){changed=true;return Object.assign({},r,{code:m.code,subcode:m.subcode,remarks:m.remarks,updatedBy:m.updatedBy,updatedAt:m.updatedAt,status:'done'});}return r;});
-        if(changed){localSave();renderAdmin();toast('POC updates received!');setLastSync();}
+        if(changed){localSave();if(currentRole==='admin')renderAdmin();else renderPoc();toast('Updates received!');setLastSync();}
       }
     }catch(e){}
   }
