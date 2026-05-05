@@ -9,10 +9,9 @@ const CLIENT_ID='8a033239-ba9e-4731-908b-2d25da6975ad';
 const TENANT_ID='896fb671-d8c3-4078-96ca-4ee5cc8fbdde';
 const ADMIN_PIN='1234';
 const FILE_NAME='RiderAbsenceCRM_Data.json';
-const KV_API='https://crm-api.deliveries1885.workers.dev';
-// Admin's OneDrive - everyone reads/writes from this
-const ADMIN_USER_ID='info_1885_ae';
-const SHAREPOINT_HOST='eightyfivedeliverys-my.sharepoint.com';
+const SP_SITE='eightyfivedeliverys.sharepoint.com';
+const SP_SITE_PATH='/sites/Testing';
+const SP_DRIVE='Shared Documents';
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.32.2/lib/msal-browser.min.js"></script>
 <style>
@@ -213,10 +212,7 @@ let accessToken=null;
 let isSaving=false;
 
 // Shared file URL - points to admin's OneDrive file via Graph API
-function getSharedFileUrl(){
-  // Use Graph API to access admin's OneDrive file directly
-  return `https://graph.microsoft.com/v1.0/users/${ADMIN_USER_ID.replace(/_/g,'.')}.${SHAREPOINT_HOST.split('.')[0].replace('eightyfivedeliverys','1885')}/drive/root:/${FILE_NAME}:/content`;
-}
+
 
 function initMsal(){
   try{
@@ -276,37 +272,41 @@ async function completeLogin(){
 
 // Read from admin's OneDrive (shared file)
 async function readSharedFile(){
-  // KV is the shared bridge - all users read from here
+  // Read from SharePoint Shared Documents - accessible by all org users
   try{
-    const r=await fetch(KV_API+'/api/riders?t='+Date.now());
-    if(r.ok){const d=await r.json();if(Array.isArray(d)&&d.length>0)return d;}
-  }catch(e){console.log('KV read failed:',e);}
-  // Fallback: admin reads from own OneDrive
-  if(currentEmail&&currentEmail.toLowerCase()===('info@1885.ae').toLowerCase()){
-    try{
-      const myUrl=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
-      const myResp=await fetch(myUrl,{headers:{Authorization:'Bearer '+accessToken}});
-      if(myResp.ok)return await myResp.json();
-    }catch(e){}
-  }
+    const url=`https://graph.microsoft.com/v1.0/sites/${SP_SITE}:${SP_SITE_PATH}:/drives`;
+    const drivesResp=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+    if(drivesResp.ok){
+      const drives=await drivesResp.json();
+      const docDrive=drives.value&&drives.value.find(d=>d.name===SP_DRIVE||d.driveType==='documentLibrary');
+      if(docDrive){
+        const fileUrl=`https://graph.microsoft.com/v1.0/drives/${docDrive.id}/root:/${FILE_NAME}:/content`;
+        const fileResp=await fetch(fileUrl,{headers:{Authorization:'Bearer '+accessToken}});
+        if(fileResp.ok)return await fileResp.json();
+        if(fileResp.status===404)return null;
+      }
+    }
+  }catch(e){console.error('SharePoint read error:',e);}
   return null;
 }
-
-// Write to KV (shared bridge) + admin's OneDrive (backup)
 async function writeSharedFile(data){
-  // Always write to KV first - accessible by everyone
-  const kvResp=await fetch(KV_API+'/api/riders',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-  if(!kvResp.ok)throw new Error('KV write failed: '+kvResp.status);
-  // Also save to admin's OneDrive if admin is logged in (backup)
-  if(currentEmail&&currentEmail.toLowerCase()===('info@1885.ae').toLowerCase()){
-    try{
-      const url=`https://graph.microsoft.com/v1.0/me/drive/root:/${FILE_NAME}:/content`;
-      await fetch(url,{method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(data)});
-    }catch(e){console.log('OneDrive backup failed:',e);}
-  }
-  return true;
+  // Write to SharePoint Shared Documents - accessible by all org users
+  try{
+    const url=`https://graph.microsoft.com/v1.0/sites/${SP_SITE}:${SP_SITE_PATH}:/drives`;
+    const drivesResp=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});
+    if(drivesResp.ok){
+      const drives=await drivesResp.json();
+      const docDrive=drives.value&&drives.value.find(d=>d.name===SP_DRIVE||d.driveType==='documentLibrary');
+      if(docDrive){
+        const fileUrl=`https://graph.microsoft.com/v1.0/drives/${docDrive.id}/root:/${FILE_NAME}:/content`;
+        const fileResp=await fetch(fileUrl,{method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(data)});
+        if(fileResp.ok)return await fileResp.json();
+        throw new Error('SharePoint write failed: '+fileResp.status);
+      }
+    }
+    throw new Error('Could not find SharePoint drive');
+  }catch(e){console.error('SharePoint write error:',e);throw e;}
 }
-
 async function loadShared(showToast){
   setSyncStatus('spin','Loading...');
   try{
@@ -353,16 +353,19 @@ async function saveSingleRider(rider){
   isSaving=true;
   setSyncStatus('spin','Saving...');
   try{
-    // POC saves individual rider via KV /api/riders/save (atomic update)
-    const saveResp=await fetch(KV_API+'/api/riders/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rider)});
-    if(!saveResp.ok)throw new Error('Save failed: '+saveResp.status);
-    // Update local riders array
-    riders=riders.map(r=>{
+    const latest=await readSharedFile();
+    let all=latest||riders;
+    let found=false;
+    all=all.map(r=>{
       if(r.passport&&rider.passport&&r.passport.trim()===rider.passport.trim()){
+        found=true;
         return Object.assign({},r,{code:rider.code,subcode:rider.subcode,remarks:rider.remarks,updatedBy:rider.updatedBy,updatedAt:rider.updatedAt,status:'done'});
       }
       return r;
     });
+    if(!found){toast('Rider not found!');isSaving=false;return false;}
+    await writeSharedFile(all);
+    riders=all;
     localSave();
     setSyncStatus('ok','Saved!');
     setLastSync();
